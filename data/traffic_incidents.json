@@ -1,0 +1,47 @@
+[
+  {
+    "incident_id": "INC-001",
+    "timestamp": "2026-05-31T08:10:00+08:00",
+    "road_name": "PIE",
+    "location": "PIE near Toa Payoh",
+    "type": "Accident",
+    "severity": "High",
+    "status": "Active"
+  },
+  {
+    "incident_id": "INC-002",
+    "timestamp": "2026-05-31T08:25:00+08:00",
+    "road_name": "CTE",
+    "location": "CTE before Braddell Road",
+    "type": "Congestion",
+    "severity": "Medium",
+    "status": "Active"
+  },
+  {
+    "incident_id": "INC-003",
+    "timestamp": "2026-05-31T08:40:00+08:00",
+    "road_name": "AYE",
+    "location": "AYE near Clementi Ave 2",
+    "type": "Roadwork",
+    "severity": "Low",
+    "status": "Active"
+  },
+  {
+    "incident_id": "INC-004",
+    "timestamp": "2026-05-31T09:05:00+08:00",
+    "road_name": "BKE",
+    "location": "BKE towards Woodlands",
+    "type": "Breakdown",
+    "severity": "Medium",
+    "status": "Resolved"
+  },
+  {
+    "incident_id": "INC-005",
+    "timestamp": "2026-05-31T09:20:00+08:00",
+    "road_name": "ECP",
+    "location": "ECP near Fort Road",
+    "type": "Accident",
+    "severity": "High",
+    "status": "Active"
+  }
+]
