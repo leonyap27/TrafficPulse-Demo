@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<!--
+  TrafficPulse Demo Dashboard — TD-3
+  ===================================
+  Dataset: data/traffic_incidents.json
+    - 5 dummy incidents across Singapore expressways (PIE, CTE, AYE, BKE, ECP)
+    - Fields: incident_id, timestamp, road_name, location, type, severity, status
+    - Severity levels: High | Medium | Low
+    - Incident types: Accident | Congestion | Roadwork | Breakdown
+    - Status values: Active | Resolved
+
+  How to run:
+    Open this file directly in a browser — no server required.
+    The dataset is embedded in the DATA constant below.
+    To update incidents, edit the DATA array in the <script> block.
+
+  Tests:
+    Open the browser console and call runTests() to execute built-in assertions.
+    Or click the "Run built-in tests" button at the bottom of the page.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrafficPulse — Recent Incident Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f4f6f9;
+      color: #1c2640;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1c2640 0%, #2d3f6e 100%);
+      color: #fff;
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { font-size: 1.4rem; letter-spacing: .4px; }
+    header h1 span { color: #f4c842; }
+    #latest-ts { font-size: .78rem; color: #b8c4e0; }
+
+    /* ── Layout ── */
+    main { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
+
+    /* ── Stat cards ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 18px 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.07);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      border-top: 3px solid transparent;
+    }
+    .card .label { font-size: .7rem; text-transform: uppercase; letter-spacing: .7px; color: #6b7a9a; }
+    .card .value { font-size: 2.1rem; font-weight: 700; line-height: 1; }
+    .card.red    { border-top-color: #d93025; } .card.red    .value { color: #d93025; }
+    .card.amber  { border-top-color: #e8700a; } .card.amber  .value { color: #e8700a; }
+    .card.blue   { border-top-color: #1967d2; } .card.blue   .value { color: #1967d2; }
+    .card.green  { border-top-color: #188038; } .card.green  .value { color: #188038; }
+    .card.teal   { border-top-color: #007b83; } .card.teal   .value { color: #007b83; }
+    .card.purple { border-top-color: #7627bb; } .card.purple .value { color: #7627bb; }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .controls input, .controls select {
+      padding: 9px 14px;
+      border: 1px solid #d0d5dd;
+      border-radius: 8px;
+      font-size: .875rem;
+      background: #fff;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+      color: #1c2640;
+    }
+    .controls input:focus, .controls select:focus {
+      border-color: #1967d2;
+      box-shadow: 0 0 0 3px rgba(25,103,210,.12);
+    }
+    .controls input { flex: 1; min-width: 220px; }
+
+    /* ── Table ── */
+    .table-wrap {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.07);
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    thead { background: #1c2640; color: #fff; }
+    thead th { padding: 13px 16px; text-align: left; font-weight: 500; letter-spacing: .3px; font-size: .8rem; text-transform: uppercase; }
+    tbody tr { border-bottom: 1px solid #f0f2f5; transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f7f9ff; }
+    tbody td { padding: 12px 16px; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .2px;
+    }
+    .sev-High   { background: #fce8e6; color: #c5221f; }
+    .sev-Medium { background: #fef3e2; color: #b06000; }
+    .sev-Low    { background: #e6f4ea; color: #137333; }
+    .status-Active   { background: #e8f0fe; color: #1967d2; }
+    .status-Resolved { background: #f1f3f4; color: #5f6368; }
+
+    /* ── Empty state ── */
+    #empty-state {
+      text-align: center;
+      padding: 52px 24px;
+      color: #8896b5;
+    }
+    #empty-state .empty-icon { font-size: 2rem; margin-bottom: 8px; }
+    #empty-state p { margin-top: 6px; font-size: .9rem; }
+
+    /* ── Tests ── */
+    #test-section { margin-top: 32px; }
+    #test-toggle {
+      background: none;
+      border: 1px solid #d0d5dd;
+      border-radius: 8px;
+      padding: 7px 16px;
+      cursor: pointer;
+      font-size: .85rem;
+      color: #6b7a9a;
+      transition: background .1s, border-color .1s;
+    }
+    #test-toggle:hover { background: #f0f2f5; border-color: #b0b8cc; }
+    #test-output {
+      display: none;
+      margin-top: 12px;
+      background: #1c2640;
+      color: #c8f7c5;
+      border-radius: 10px;
+      padding: 16px 20px;
+      font-family: "Courier New", monospace;
+      font-size: .82rem;
+      white-space: pre;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    #test-output .fail    { color: #ff6b6b; }
+    #test-output .pass    { color: #74ee85; }
+    #test-output .summary { color: #f4c842; font-weight: bold; margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Traffic<span>Pulse</span> &mdash; Recent Incident Dashboard</h1>
+  <span id="latest-ts">Loading…</span>
+</header>
+
+<main>
+  <!-- Stat cards (ACs 1–3) -->
+  <div class="stats-grid" id="stats-grid"></div>
+
+  <!-- Controls (ACs 5–6) -->
+  <div class="controls">
+    <input id="search" type="text" placeholder="Search by road or location…" aria-label="Search incidents" />
+    <select id="severity-filter" aria-label="Filter by severity">
+      <option value="">All Severities</option>
+      <option value="High">High</option>
+      <option value="Medium">Medium</option>
+      <option value="Low">Low</option>
+    </select>
+  </div>
+
+  <!-- Incident table (AC 4) -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Timestamp</th>
+          <th>Road</th>
+          <th>Location</th>
+          <th>Type</th>
+          <th>Severity</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="incident-tbody"></tbody>
+    </table>
+    <!-- Empty state (AC 8) -->
+    <div id="empty-state" style="display:none" role="status">
+      <div class="empty-icon">🔍</div>
+      <strong>No incidents found</strong>
+      <p>Try adjusting the search term or severity filter.</p>
+    </div>
+  </div>
+
+  <!-- Tests (AC 9) -->
+  <div id="test-section">
+    <button id="test-toggle" onclick="toggleTests()">Run built-in tests</button>
+    <pre id="test-output" aria-live="polite"></pre>
+  </div>
+</main>
+
+<script>
+  // ── Embedded dataset (mirrors data/traffic_incidents.json) ──────────────────
+  const DATA = [
+    { incident_id: "INC-001", timestamp: "2026-05-31T08:10:00+08:00", road_name: "PIE", location: "PIE near Toa Payoh",       type: "Accident",   severity: "High",   status: "Active"   },
+    { incident_id: "INC-002", timestamp: "2026-05-31T08:25:00+08:00", road_name: "CTE", location: "CTE before Braddell Road", type: "Congestion", severity: "Medium", status: "Active"   },
+    { incident_id: "INC-003", timestamp: "2026-05-31T08:40:00+08:00", road_name: "AYE", location: "AYE near Clementi Ave 2",  type: "Roadwork",   severity: "Low",    status: "Active"   },
+    { incident_id: "INC-004", timestamp: "2026-05-31T09:05:00+08:00", road_name: "BKE", location: "BKE towards Woodlands",    type: "Breakdown",  severity: "Medium", status: "Resolved" },
+    { incident_id: "INC-005", timestamp: "2026-05-31T09:20:00+08:00", road_name: "ECP", location: "ECP near Fort Road",       type: "Accident",   severity: "High",   status: "Active"   }
+  ];
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  function formatTs(iso) {
+    const d = new Date(iso);
+    return isNaN(d) ? iso : d.toLocaleString("en-SG", { dateStyle: "medium", timeStyle: "short" });
+  }
+
+  function latestTimestamp(records) {
+    if (!records.length) return null;
+    return records.reduce((max, r) => r.timestamp > max ? r.timestamp : max, records[0].timestamp);
+  }
+
+  function computeStats(records) {
+    const total  = records.length;
+    const high   = records.filter(r => r.severity === "High").length;
+    const byType = { Accident: 0, Congestion: 0, Roadwork: 0, Breakdown: 0 };
+    records.forEach(r => { if (r.type in byType) byType[r.type]++; });
+    return { total, high, byType };
+  }
+
+  function filterRecords(records, { query, severity }) {
+    const q = query.toLowerCase();
+    return records.filter(r => {
+      const matchSev = !severity || r.severity === severity;
+      const matchQ   = !q || r.road_name.toLowerCase().includes(q) || r.location.toLowerCase().includes(q);
+      return matchSev && matchQ;
+    });
+  }
+
+  // ── Render stat cards (ACs 1–3) ─────────────────────────────────────────────
+  function renderStats(records) {
+    const { total, high, byType } = computeStats(records);
+    const cards = [
+      { label: "Total Incidents",   value: total,             cls: "blue"   },
+      { label: "High Severity",     value: high,              cls: "red"    },
+      { label: "Accidents",         value: byType.Accident,   cls: "amber"  },
+      { label: "Congestion",        value: byType.Congestion, cls: "teal"   },
+      { label: "Roadworks",         value: byType.Roadwork,   cls: "green"  },
+      { label: "Breakdowns",        value: byType.Breakdown,  cls: "purple" },
+    ];
+    document.getElementById("stats-grid").innerHTML = cards.map(c => `
+      <div class="card ${c.cls}" role="img" aria-label="${c.label}: ${c.value}">
+        <span class="label">${c.label}</span>
+        <span class="value">${c.value}</span>
+      </div>`).join("");
+  }
+
+  // ── Render incident table (AC 4) ─────────────────────────────────────────────
+  function renderTable(records) {
+    const tbody = document.getElementById("incident-tbody");
+    const empty = document.getElementById("empty-state");
+
+    if (!records.length) {
+      tbody.innerHTML = "";
+      empty.style.display = "block";
+      return;
+    }
+    empty.style.display = "none";
+    tbody.innerHTML = records.map(r => `
+      <tr>
+        <td>${r.incident_id}</td>
+        <td>${formatTs(r.timestamp)}</td>
+        <td><strong>${r.road_name}</strong></td>
+        <td>${r.location}</td>
+        <td>${r.type}</td>
+        <td><span class="badge sev-${r.severity}">${r.severity}</span></td>
+        <td><span class="badge status-${r.status}">${r.status}</span></td>
+      </tr>`).join("");
+  }
+
+  // ── Main render ──────────────────────────────────────────────────────────────
+  function render() {
+    const query    = document.getElementById("search").value;
+    const severity = document.getElementById("severity-filter").value;
+    const filtered = filterRecords(DATA, { query, severity });
+    renderStats(DATA);      // stats always reflect the full dataset
+    renderTable(filtered);
+  }
+
+  // ── Latest timestamp (AC 7) ──────────────────────────────────────────────────
+  function renderTimestamp() {
+    const el = document.getElementById("latest-ts");
+    if (!DATA.length) {
+      el.textContent = "No data available";
+      return;
+    }
+    el.textContent = "Latest: " + formatTs(latestTimestamp(DATA));
+  }
+
+  // ── Event listeners (ACs 5–6) ────────────────────────────────────────────────
+  document.getElementById("search").addEventListener("input", render);
+  document.getElementById("severity-filter").addEventListener("change", render);
+
+  // ── Init ─────────────────────────────────────────────────────────────────────
+  renderTimestamp();
+  render();
+
+  // ── Built-in tests (AC 9) ────────────────────────────────────────────────────
+  function runTests() {
+    const results = [];
+    let passed = 0, failed = 0;
+
+    function assert(desc, condition) {
+      if (condition) {
+        results.push({ pass: true,  msg: "PASS  " + desc });
+        passed++;
+      } else {
+        results.push({ pass: false, msg: "FAIL  " + desc });
+        failed++;
+      }
+    }
+
+    // computeStats — full dataset
+    const s = computeStats(DATA);
+    assert("total incidents = 5",          s.total === 5);
+    assert("high severity count = 2",      s.high === 2);
+    assert("Accident count = 2",           s.byType.Accident === 2);
+    assert("Congestion count = 1",         s.byType.Congestion === 1);
+    assert("Roadwork count = 1",           s.byType.Roadwork === 1);
+    assert("Breakdown count = 1",          s.byType.Breakdown === 1);
+
+    // computeStats — empty dataset (AC 8)
+    const sEmpty = computeStats([]);
+    assert("computeStats on empty: total=0", sEmpty.total === 0);
+    assert("computeStats on empty: high=0",  sEmpty.high === 0);
+
+    // latestTimestamp
+    assert("latestTimestamp = INC-005",    latestTimestamp(DATA) === "2026-05-31T09:20:00+08:00");
+    assert("latestTimestamp of [] = null", latestTimestamp([]) === null);
+
+    // filterRecords — severity filter (AC 5)
+    const highOnly = filterRecords(DATA, { query: "", severity: "High" });
+    assert("filter High = 2 records",      highOnly.length === 2);
+
+    const lowOnly = filterRecords(DATA, { query: "", severity: "Low" });
+    assert("filter Low = 1 record",        lowOnly.length === 1);
+
+    const allSev = filterRecords(DATA, { query: "", severity: "" });
+    assert("filter All = 5 records",       allSev.length === 5);
+
+    // filterRecords — search by road name (AC 6)
+    const pie = filterRecords(DATA, { query: "PIE", severity: "" });
+    assert("search 'PIE' returns INC-001", pie.length === 1 && pie[0].incident_id === "INC-001");
+
+    // filterRecords — search by location keyword (AC 6)
+    const woodlands = filterRecords(DATA, { query: "woodlands", severity: "" });
+    assert("search 'woodlands' returns INC-004", woodlands.length === 1 && woodlands[0].incident_id === "INC-004");
+
+    // filterRecords — case-insensitive
+    const pie2 = filterRecords(DATA, { query: "pie", severity: "" });
+    assert("search is case-insensitive ('pie')", pie2.length === 1);
+
+    // filterRecords — no match (empty state path, AC 8)
+    const none = filterRecords(DATA, { query: "xyz999", severity: "" });
+    assert("no match returns empty array", none.length === 0);
+
+    // filterRecords — combined filter (ACs 5+6)
+    const combined = filterRecords(DATA, { query: "ECP", severity: "High" });
+    assert("ECP + High = INC-005", combined.length === 1 && combined[0].incident_id === "INC-005");
+
+    // filterRecords — combined filter no match
+    const mismatch = filterRecords(DATA, { query: "ECP", severity: "Low" });
+    assert("ECP + Low = 0 records", mismatch.length === 0);
+
+    return { results, passed, failed };
+  }
+
+  function toggleTests() {
+    const out = document.getElementById("test-output");
+    if (out.style.display === "block") {
+      out.style.display = "none";
+      return;
+    }
+    const { results, passed, failed } = runTests();
+    out.innerHTML = results.map(r =>
+      `<span class="${r.pass ? "pass" : "fail"}">${r.msg}</span>`
+    ).join("\n") + `\n<span class="summary">── ${passed} passed, ${failed} failed ──</span>`;
+    out.style.display = "block";
+  }
+</script>
+</body>
+</html>
