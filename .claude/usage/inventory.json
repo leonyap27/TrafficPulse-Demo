@@ -1,0 +1,156 @@
+{
+  "generated_at": "2026-05-31T16:28:24+08:00",
+  "count": 25,
+  "entries": [
+    {
+      "asset_path": ".claude/agents/rag-architect.md",
+      "asset_type": "agent",
+      "name": "rag-architect",
+      "description": "Read-only specialist for reviewing RAG / retrieval / KB / prompt changes in this repo. Use when a change touches data/kb/, tools/knowledge_base.py, agents/, or any embedding / chunking / prompt-composition / source-attribution code. Returns structured findings without editing files."
+    },
+    {
+      "asset_path": ".claude/CLAUDE.md",
+      "asset_type": "bridge",
+      "name": "CLAUDE.md",
+      "description": "Project: Funding Paper Agent"
+    },
+    {
+      "asset_path": ".claude/ONBOARDING.md",
+      "asset_type": "bridge",
+      "name": "ONBOARDING.md",
+      "description": "Onboarding — Funding Paper Agent"
+    },
+    {
+      "asset_path": "AGENTS.md",
+      "asset_type": "bridge",
+      "name": "AGENTS.md",
+      "description": "AGENTS.md"
+    },
+    {
+      "asset_path": ".claude/commands/api-change.md",
+      "asset_type": "command",
+      "name": "/api-change",
+      "description": "Walk through a backend API change — contract, compatibility, security, frontend callers."
+    },
+    {
+      "asset_path": ".claude/commands/dfsl.md",
+      "asset_type": "command",
+      "name": "/dfsl",
+      "description": "Do First Sorry Later — run plan → impl → test → done autonomously on a JIRA ticket, no human gates, exit with a disclaimer of assumptions + per-phase confidence."
+    },
+    {
+      "asset_path": ".claude/commands/jira-done.md",
+      "asset_type": "command",
+      "name": "/jira-done",
+      "description": "Accumulate polished per-ticket release docs after /jira-test Pass — writes up to three audience-specific markdown files (technical / business / management) with a/b/c priority tags into the active release tracker's docs folder."
+    },
+    {
+      "asset_path": ".claude/commands/jira-impl.md",
+      "asset_type": "command",
+      "name": "/jira-impl",
+      "description": "Implement an approved JIRA plan — gate on review completion, branch, commit, test, self-review, PR."
+    },
+    {
+      "asset_path": ".claude/commands/jira-plan.md",
+      "asset_type": "command",
+      "name": "/jira-plan",
+      "description": "Plan implementation for a JIRA ticket — validate status, read comments, reconcile vs code, classify, post plan to JIRA (or skip when nothing changed)."
+    },
+    {
+      "asset_path": ".claude/commands/jira-review.md",
+      "asset_type": "command",
+      "name": "/jira-review",
+      "description": "Review a posted JIRA plan — walk the questions with the user, persist Q&A as a JIRA thread, auto-chain into /jira-impl on OK."
+    },
+    {
+      "asset_path": ".claude/commands/jira-test.md",
+      "asset_type": "command",
+      "name": "/jira-test",
+      "description": "Test an implemented JIRA ticket — generate test cases from the plan + PR diff, run them (auto where safe, guide where not), capture redacted evidence to JIRA."
+    },
+    {
+      "asset_path": ".claude/commands/mcp-tool-review.md",
+      "asset_type": "command",
+      "name": "/mcp-tool-review",
+      "description": "Review an MCP tool change — descriptions-as-prompts, args, return shape, errors, versioning, injection."
+    },
+    {
+      "asset_path": ".claude/commands/rag-review.md",
+      "asset_type": "command",
+      "name": "/rag-review",
+      "description": "Review a RAG / retrieval / KB / prompt change — KB integrity, retrieval sanity, prompt diff, eval, attribution."
+    },
+    {
+      "asset_path": ".claude/commands/release-cut.md",
+      "asset_type": "command",
+      "name": "/release-cut",
+      "description": "Close the current sprint release, bump VERSION, and open the next tracker with carry-overs. Two modes — PREVIEW (default, read-only, ephemeral) shows the bundle decision table; YES mode performs the actual cut on a chore branch. FP-214."
+    },
+    {
+      "asset_path": ".claude/commands/release-doc.md",
+      "asset_type": "command",
+      "name": "/release-doc",
+      "description": "Generate release document(s) from a JIRA release tracker. Two modes — render-only (default, idempotent prose-safe regenerate) or YES super-command (close-the-sprint, also transitions READY-FOR-DEPLOY items to DONE, lists carry-over, creates next sprint's tracker, prompts to bump VERSION). FP-188 + FP-198."
+    },
+    {
+      "asset_path": ".claude/commands/ui-change.md",
+      "asset_type": "command",
+      "name": "/ui-change",
+      "description": "Walk through a frontend UI change — locate, contract, implement, verify in browser."
+    },
+    {
+      "asset_path": ".claude/hooks/block-env-commit.sh",
+      "asset_type": "hook",
+      "name": "block-env-commit",
+      "description": "!/usr/bin/env python3"
+    },
+    {
+      "asset_path": ".claude/hooks/record-slash-usage.py",
+      "asset_type": "hook",
+      "name": "record-slash-usage",
+      "description": "!/usr/bin/env python3"
+    },
+    {
+      "asset_path": ".claude/hooks/release-doc-prompt.py",
+      "asset_type": "hook",
+      "name": "release-doc-prompt",
+      "description": "!/usr/bin/env python3"
+    },
+    {
+      "asset_path": ".claude/rules/agents.md",
+      "asset_type": "rule",
+      "name": "agents",
+      "description": "Conventions for the multi-agent orchestration layer (Drafter, Reviewer, Coherence, Formatter, Supervisor)."
+    },
+    {
+      "asset_path": ".claude/rules/backend.md",
+      "asset_type": "rule",
+      "name": "backend",
+      "description": "Conventions for the FastAPI backend and shared tools/ helpers."
+    },
+    {
+      "asset_path": ".claude/rules/frontend.md",
+      "asset_type": "rule",
+      "name": "frontend",
+      "description": "Conventions for the React + Zustand + TypeScript frontend."
+    },
+    {
+      "asset_path": ".claude/rules/kb.md",
+      "asset_type": "rule",
+      "name": "kb",
+      "description": "Conventions for the Knowledge Base (KB) — content, manifest, chunking, retrieval."
+    },
+    {
+      "asset_path": ".claude/rules/mcp-service.md",
+      "asset_type": "rule",
+      "name": "mcp-service",
+      "description": "Conventions for the FastMCP server that exposes Funding Paper capabilities to external AI agents."
+    },
+    {
+      "asset_path": ".claude/rules/python-style.md",
+      "asset_type": "rule",
+      "name": "python-style",
+      "description": "Generic Python conventions — PEP 8 baseline, type hints, docstrings, error handling."
+    }
+  ]
+}

@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Local Workflow Usage Tracker · FP-192</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --fg: #1a1d23;
+    --muted: #6b7280;
+    --card: #ffffff;
+    --border: #e4e7eb;
+    --accent: #2563eb;
+    --accent-soft: #dbeafe;
+    --success: #16a34a;
+    --warn: #d97706;
+    --danger: #dc2626;
+    --neutral: #6b7280;
+    --bar-bg: #eef2f7;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+  header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 28px 14px;
+  }
+  header h1 {
+    margin: 0 0 2px;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  header .sub {
+    color: var(--muted);
+    font-size: 12px;
+  }
+  main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 20px 28px 60px;
+  }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; }
+  .row > * { flex: 1 1 220px; min-width: 0; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .card h2 {
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .kpi .value {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  .kpi .label {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 4px;
+  }
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-top: 12px;
+  }
+  .filters label {
+    font-size: 12px;
+    color: var(--muted);
+    display: inline-flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .filters select, .filters input[type=date] {
+    font: inherit;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--card);
+    min-width: 140px;
+  }
+  .filters button {
+    align-self: flex-end;
+    font: inherit;
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--card);
+    cursor: pointer;
+  }
+  .filters button:hover { background: var(--accent-soft); border-color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 7px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  th {
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: #fafbfc;
+    position: sticky;
+    top: 0;
+  }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+  .bar {
+    display: inline-block;
+    height: 8px;
+    background: var(--accent);
+    border-radius: 4px;
+    vertical-align: middle;
+  }
+  .bar-track {
+    display: inline-block;
+    height: 8px;
+    background: var(--bar-bg);
+    border-radius: 4px;
+    width: 100%;
+    overflow: hidden;
+  }
+  .bar-track .bar { display: block; }
+  .stacked { display: flex; height: 10px; border-radius: 4px; overflow: hidden; }
+  .stacked > span { display: block; height: 100%; }
+  .stk-completed { background: var(--success); }
+  .stk-partial { background: var(--warn); }
+  .stk-blocked { background: var(--danger); }
+  .stk-failed { background: #b91c1c; }
+  .stk-skipped { background: var(--neutral); }
+  .stk-started { background: var(--accent); opacity: 0.4; }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .legend i {
+    width: 10px; height: 10px; border-radius: 2px; display: inline-block;
+  }
+  .pill {
+    display: inline-block;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: var(--bar-bg);
+    color: var(--muted);
+  }
+  .pill-completed { background: #d1fae5; color: #047857; }
+  .pill-partial { background: #fed7aa; color: #9a3412; }
+  .pill-blocked, .pill-failed { background: #fee2e2; color: #991b1b; }
+  .pill-skipped { background: #e5e7eb; color: #4b5563; }
+  .pill-started { background: var(--accent-soft); color: #1e40af; }
+  .empty {
+    color: var(--muted);
+    font-style: italic;
+    padding: 10px 0;
+  }
+  .loader {
+    background: var(--card);
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    color: var(--muted);
+  }
+  .loader p { margin: 6px 0; }
+  .loader input[type=file] { font: inherit; }
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin: 26px 0 10px;
+  }
+  .toolbar h2 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+  .toolbar .hint { font-size: 11px; color: var(--muted); }
+  .note { color: var(--muted); font-size: 12px; max-width: 36em; }
+  code { background: var(--bar-bg); padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+  .repo-cards { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; }
+  .repo-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    min-width: 180px;
+  }
+  .repo-card:hover { border-color: var(--accent); box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .repo-card.active { border-color: var(--accent); background: var(--accent-soft); }
+  .rc-info { flex: 1; min-width: 0; }
+  .rc-name { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rc-owner { font-size: 11px; color: var(--muted); }
+  .rc-stats { font-size: 11px; color: var(--muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Claude/Codex Dashboard</h1>
+  <div class="sub">Team workflow telemetry · team profiles + your live session · run <code>python scripts/open_dashboard.py</code></div>
+  <div class="filters" id="filters" hidden>
+    <label>From<input type="date" id="f-from"></label>
+    <label>To<input type="date" id="f-to"></label>
+    <label>Developer<select id="f-developer"><option value="">(all)</option></select></label>
+    <label>Platform<select id="f-platform"><option value="">(all)</option></select></label>
+    <label>Asset type<select id="f-asset"><option value="">(all)</option></select></label>
+    <label>Repo<select id="f-repo"><option value="">(all)</option></select></label>
+    <button id="f-reset" type="button">Reset</button>
+  </div>
+</header>
+
+<main>
+  <div id="loader" class="loader">
+    <p>Loading team profiles and the current developer's live zone…</p>
+    <p id="loader-status" class="note"></p>
+    <p>If auto-load failed (you opened the file directly via <code>file://</code>), pick a legacy events file manually:</p>
+    <p><label>events.jsonl (legacy): <input type="file" id="file-events" accept=".jsonl,.json,.log,.txt"></label></p>
+    <p><label>inventory.json: <input type="file" id="file-inventory" accept=".json"></label></p>
+    <p class="note">Tip: run <code>python scripts/open_dashboard.py</code> from the repo root — it serves team + live events over <code>http://</code> so auto-load works in every browser.</p>
+  </div>
+
+  <div id="dashboard" hidden>
+    <div class="toolbar"><h2>Repositories</h2><span class="hint">click a card to filter · click the active card again to show all</span></div>
+    <div class="repo-cards" id="repo-cards"></div>
+
+    <section class="row" id="kpis"></section>
+
+    <div class="toolbar"><h2>Usage by workflow</h2><span class="hint">events grouped by <code>command</code></span></div>
+    <div class="card"><table id="t-workflow"><thead><tr><th>Command</th><th class="num">Events</th><th>Outcomes</th><th class="num">Last seen</th></tr></thead><tbody></tbody></table></div>
+    <div class="legend">
+      <span><i class="stk-started"></i>started</span>
+      <span><i class="stk-completed"></i>completed</span>
+      <span><i class="stk-partial"></i>partial</span>
+      <span><i class="stk-blocked"></i>blocked</span>
+      <span><i class="stk-failed"></i>failed</span>
+      <span><i class="stk-skipped"></i>skipped</span>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="toolbar"><h2>Per developer</h2></div>
+        <div class="card"><table id="t-developer"><thead><tr><th>Developer</th><th class="num">Events</th><th>Activity</th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div>
+        <div class="toolbar"><h2>Per platform</h2></div>
+        <div class="card"><table id="t-platform"><thead><tr><th>Platform</th><th class="num">Events</th><th>Share</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+
+    <div class="toolbar"><h2>Stale / unused assets</h2><span class="hint">in <code>inventory.json</code> with no matching event</span></div>
+    <div class="card"><table id="t-stale"><thead><tr><th>Asset</th><th>Type</th><th>Path</th></tr></thead><tbody></tbody></table></div>
+
+    <div class="toolbar"><h2>Friction notes</h2><span class="hint">events with non-<code>completed</code> outcome and a <code>note</code></span></div>
+    <div class="card"><table id="t-notes"><thead><tr><th>When</th><th>Command</th><th>Outcome</th><th>Developer</th><th>Note</th></tr></thead><tbody></tbody></table></div>
+
+    <div class="toolbar"><h2>Abandoned starts</h2><span class="hint"><code>started</code> events without a matching terminal event</span></div>
+    <div class="card"><table id="t-abandoned"><thead><tr><th>When</th><th>Command</th><th>Developer</th><th>Platform</th></tr></thead><tbody></tbody></table></div>
+  </div>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  const state = {
+    events: [],
+    inventory: [],
+    profile: {},
+    filters: { from: null, to: null, developer: "", platform: "", asset: "", repo: "" },
+  };
+  const TERMINAL = new Set(["completed", "partial", "blocked", "failed", "skipped"]);
+
+  const $ = (sel) => document.querySelector(sel);
+  const create = (tag, opts = {}) => {
+    const el = document.createElement(tag);
+    if (opts.text != null) el.textContent = opts.text;
+    if (opts.cls) el.className = opts.cls;
+    if (opts.attrs) for (const [k, v] of Object.entries(opts.attrs)) el.setAttribute(k, v);
+    return el;
+  };
+
+  // Resolve a developer's display name. Uses developer_name (from git config
+  // user.name, stored in the event) when present; falls back to raw email.
+  function maskDeveloper(email, displayName) {
+    if (displayName) return displayName;
+    if (!email) return "(unknown)";
+    return email;
+  }
+
+  // Build email → display-name map from all events that carry developer_name.
+  // Last event wins so a corrected profile entry overrides stale git-config names.
+  // Profile display_name is the final authority — it overrides any event-sourced name
+  // that matches the profile's github_handle (e.g. "leonyap27" → "Leon Ye").
+  function buildDevNameMap(events) {
+    const m = new Map();
+    for (const e of events) {
+      if (e.developer && e.developer_name) {
+        m.set(e.developer, e.developer_name); // last wins
+      }
+    }
+    const { display_name: dn, github_handle: gh } = state.profile || {};
+    if (dn && gh) {
+      for (const [email, name] of m.entries()) {
+        if (name === gh) m.set(email, dn);
+      }
+    }
+    return m;
+  }
+
+  function parseEventsJsonl(text) {
+    const lines = text.split(/\r?\n/);
+    const out = [];
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      try {
+        out.push(JSON.parse(trimmed));
+      } catch (_) { /* skip bad lines */ }
+    }
+    return out;
+  }
+
+  function parseEventJson(text) {
+    try {
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed)) return parsed.filter((row) => row && typeof row === "object");
+      if (parsed && typeof parsed === "object") return [parsed];
+    } catch (_) { /* ignore */ }
+    return [];
+  }
+
+  function dedupKey(event) {
+    return [
+      event.timestamp || "",
+      event.command || "",
+      event.outcome || "",
+      event.trigger || "",
+      event.developer || "",
+    ].join("|");
+  }
+
+  function mergeDedup(...lists) {
+    const seen = new Set();
+    const merged = [];
+    for (const list of lists) {
+      if (!Array.isArray(list)) continue;
+      for (const event of list) {
+        if (!event || typeof event !== "object") continue;
+        const key = dedupKey(event);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        merged.push(event);
+      }
+    }
+    return merged;
+  }
+
+  async function tryFetch(path) {
+    try {
+      const resp = await fetch(path, { cache: "no-store" });
+      if (!resp.ok) return null;
+      return await resp.text();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function autoLoad() {
+    const status = $("#loader-status");
+    const invText = await tryFetch("../inventory.json");
+    const teamText = await tryFetch("/_usage/team-events.jsonl");
+    const liveText = await tryFetch("/_usage/live-events.jsonl");
+    const profileText = await tryFetch("/_usage/profile.json");
+    if (profileText) { try { state.profile = JSON.parse(profileText); } catch (_) {} }
+
+    const teamEvents = teamText != null ? parseEventsJsonl(teamText) : null;
+    const liveEvents = liveText != null ? parseEventsJsonl(liveText) : null;
+
+    if (teamEvents != null || liveEvents != null) {
+      state.events = mergeDedup(teamEvents || [], liveEvents || []);
+      const liveCount = (liveEvents || []).length;
+      const teamCount = (teamEvents || []).length;
+      status.textContent =
+        `Loaded ${state.events.length} unique event(s) ` +
+        `(team: ${teamCount}, live: ${liveCount}).`;
+    }
+
+    if (invText != null) {
+      try {
+        const parsed = JSON.parse(invText);
+        state.inventory = parsed.entries || [];
+      } catch (_) { /* ignore */ }
+    }
+    if (state.events.length > 0 || invText != null) {
+      render();
+    } else {
+      status.textContent =
+        "Auto-load returned no data. Run scripts/open_dashboard.py from the repo " +
+        "root, or use the legacy file pickers below.";
+    }
+  }
+
+  function fileReader(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsText(file);
+    });
+  }
+
+  $("#file-events").addEventListener("change", async (ev) => {
+    const file = ev.target.files[0];
+    if (!file) return;
+    const text = await fileReader(file);
+    if (file.name.endsWith(".jsonl")) {
+      state.events = parseEventsJsonl(text);
+    } else {
+      state.events = parseEventJson(text);
+    }
+    $("#loader-status").textContent = `Loaded ${state.events.length} event(s) from picked legacy file.`;
+    render();
+  });
+
+  $("#file-inventory").addEventListener("change", async (ev) => {
+    const file = ev.target.files[0];
+    if (!file) return;
+    const text = await fileReader(file);
+    try {
+      const parsed = JSON.parse(text);
+      state.inventory = parsed.entries || [];
+      render();
+    } catch (e) {
+      $("#loader-status").textContent = `inventory.json invalid: ${e.message}`;
+    }
+  });
+
+  function populateFilters() {
+    const filters = $("#filters");
+    filters.hidden = false;
+    const developers = [...new Set(state.events.map((e) => e.developer).filter(Boolean))].sort();
+    const platforms = [...new Set(state.events.map((e) => e.platform).filter(Boolean))].sort();
+    const assets = [...new Set(state.events.map((e) => e.asset_type).filter(Boolean))].sort();
+    const repos = [...new Set(state.events.map((e) => e.repo).filter(Boolean))].sort();
+    const devNames = buildDevNameMap(state.events);
+    // Filter dropdown shows display name (or raw email) but keeps raw email as the option value.
+    fillSelectMasked("#f-developer", developers, state.filters.developer, (email) => devNames.get(email) || email);
+    fillSelect("#f-platform", platforms, state.filters.platform);
+    fillSelect("#f-asset", assets, state.filters.asset);
+    fillSelect("#f-repo", repos, state.filters.repo);
+  }
+
+  function fillSelect(sel, values, current) {
+    const el = $(sel);
+    const existing = el.value;
+    el.innerHTML = '<option value="">(all)</option>';
+    for (const v of values) {
+      const opt = create("option", { text: v });
+      opt.value = v;
+      if (v === current || v === existing) opt.selected = true;
+      el.appendChild(opt);
+    }
+  }
+
+  function fillSelectMasked(sel, values, current, masker) {
+    const el = $(sel);
+    const existing = el.value;
+    el.innerHTML = '<option value="">(all)</option>';
+    for (const v of values) {
+      const opt = create("option", { text: masker(v) });
+      opt.value = v;
+      if (v === current || v === existing) opt.selected = true;
+      el.appendChild(opt);
+    }
+  }
+
+  ["f-from", "f-to", "f-developer", "f-platform", "f-asset", "f-repo"].forEach((id) => {
+    $("#" + id).addEventListener("change", () => {
+      state.filters.from = $("#f-from").value || null;
+      state.filters.to = $("#f-to").value || null;
+      state.filters.developer = $("#f-developer").value;
+      state.filters.platform = $("#f-platform").value;
+      state.filters.asset = $("#f-asset").value;
+      state.filters.repo = $("#f-repo").value;
+      render();
+    });
+  });
+
+  $("#f-reset").addEventListener("click", () => {
+    state.filters = { from: null, to: null, developer: "", platform: "", asset: "", repo: "" };
+    ["f-from", "f-to", "f-developer", "f-platform", "f-asset", "f-repo"].forEach((id) => { $("#" + id).value = ""; });
+    render();
+  });
+
+  function applyFilters(events) {
+    const f = state.filters;
+    return events.filter((e) => {
+      if (f.from && (e.timestamp || "").slice(0, 10) < f.from) return false;
+      if (f.to && (e.timestamp || "").slice(0, 10) > f.to) return false;
+      if (f.developer && e.developer !== f.developer) return false;
+      if (f.platform && e.platform !== f.platform) return false;
+      if (f.asset && e.asset_type !== f.asset) return false;
+      if (f.repo && e.repo !== f.repo) return false;
+      return true;
+    });
+  }
+
+  function groupBy(arr, key) {
+    const m = new Map();
+    for (const e of arr) {
+      const k = e[key] || "(unknown)";
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(e);
+    }
+    return m;
+  }
+
+  function renderKpis(filtered) {
+    const totalEvents = filtered.length;
+    const developers = new Set(filtered.map((e) => e.developer).filter(Boolean));
+    const commands = new Set(filtered.map((e) => e.command).filter(Boolean));
+    const UNTRACKABLE_KPI = new Set(["bridge", "rule"]);
+    const trackableInventory = state.inventory.filter((i) => !UNTRACKABLE_KPI.has(i.asset_type));
+    const inventoryNames = new Set(trackableInventory.map((i) => i.name));
+    const usedNames = new Set(filtered.map((e) => e.command));
+    const stale = [...inventoryNames].filter((n) => !usedNames.has(n)).length;
+    const starts = filtered.filter((e) => e.outcome === "started");
+    const closes = filtered.filter((e) => TERMINAL.has(e.outcome));
+    const abandoned = starts.filter((s) => !closes.some((c) =>
+      c.command === s.command &&
+      c.developer === s.developer &&
+      Math.abs(new Date(c.timestamp) - new Date(s.timestamp)) <= 24 * 3600 * 1000 &&
+      c.timestamp >= s.timestamp
+    )).length;
+    const target = $("#kpis");
+    target.innerHTML = "";
+    const tiles = [
+      { value: totalEvents, label: "events (after filters)" },
+      { value: developers.size, label: "unique developers" },
+      { value: commands.size, label: "unique workflows used" },
+      { value: stale, label: "stale assets (no event)" },
+      { value: abandoned, label: "abandoned starts (no terminal)" },
+    ];
+    for (const t of tiles) {
+      const card = create("div", { cls: "card kpi" });
+      card.appendChild(create("h2", { text: "" })); // spacer
+      card.lastChild.remove();
+      const value = create("div", { cls: "value", text: String(t.value) });
+      const label = create("div", { cls: "label", text: t.label });
+      card.appendChild(value);
+      card.appendChild(label);
+      target.appendChild(card);
+    }
+  }
+
+  function renderWorkflowTable(filtered) {
+    const tbody = $("#t-workflow tbody");
+    tbody.innerHTML = "";
+    const grouped = groupBy(filtered, "command");
+    const rows = [...grouped.entries()].map(([cmd, events]) => {
+      const counts = {};
+      let last = "";
+      for (const e of events) {
+        counts[e.outcome] = (counts[e.outcome] || 0) + 1;
+        if (e.timestamp && e.timestamp > last) last = e.timestamp;
+      }
+      return { cmd, events, counts, total: events.length, last };
+    }).sort((a, b) => b.total - a.total);
+
+    if (!rows.length) { tbody.appendChild(emptyRow(4, "No events match the filters.")); return; }
+    for (const r of rows) {
+      const tr = create("tr");
+      tr.appendChild(create("td", { text: r.cmd }));
+      tr.appendChild(create("td", { cls: "num", text: r.total }));
+      tr.appendChild(stackedCell(r.counts, r.total));
+      tr.appendChild(create("td", { cls: "num", text: r.last.slice(0, 16).replace("T", " ") || "—" }));
+      tbody.appendChild(tr);
+    }
+  }
+
+  function stackedCell(counts, total) {
+    const cell = create("td");
+    if (!total) { cell.textContent = "—"; return cell; }
+    const wrap = create("div", { cls: "stacked" });
+    for (const key of ["started", "completed", "partial", "blocked", "failed", "skipped"]) {
+      const n = counts[key] || 0;
+      if (!n) continue;
+      const seg = create("span", { cls: `stk-${key}`, attrs: { title: `${key}: ${n}` } });
+      seg.style.flex = String(n);
+      wrap.appendChild(seg);
+    }
+    cell.appendChild(wrap);
+    const summary = create("div", { cls: "note" });
+    summary.textContent = ["completed", "partial", "blocked", "failed", "skipped", "started"]
+      .filter((k) => counts[k])
+      .map((k) => `${k}:${counts[k]}`)
+      .join("  ");
+    cell.appendChild(summary);
+    return cell;
+  }
+
+  function renderDeveloperTable(filtered) {
+    const tbody = $("#t-developer tbody");
+    tbody.innerHTML = "";
+    const devNames = buildDevNameMap(filtered);
+    const grouped = groupBy(filtered, "developer");
+    const rows = [...grouped.entries()].map(([dev, events]) => ({ dev, total: events.length }))
+      .sort((a, b) => b.total - a.total);
+    if (!rows.length) { tbody.appendChild(emptyRow(3, "No events match the filters.")); return; }
+    const max = Math.max(...rows.map((r) => r.total)) || 1;
+    for (const r of rows) {
+      const tr = create("tr");
+      const displayName = devNames.get(r.dev) || r.dev;
+      const devCell = create("td", { text: displayName });
+      if (!devNames.has(r.dev)) devCell.title = r.dev;
+      tr.appendChild(devCell);
+      tr.appendChild(create("td", { cls: "num", text: r.total }));
+      const cell = create("td");
+      const track = create("div", { cls: "bar-track" });
+      const bar = create("span", { cls: "bar" });
+      bar.style.width = `${(r.total / max) * 100}%`;
+      track.appendChild(bar);
+      cell.appendChild(track);
+      tr.appendChild(cell);
+      tbody.appendChild(tr);
+    }
+  }
+
+  function renderPlatformTable(filtered) {
+    const tbody = $("#t-platform tbody");
+    tbody.innerHTML = "";
+    const grouped = groupBy(filtered, "platform");
+    const total = filtered.length || 1;
+    const rows = [...grouped.entries()].map(([p, events]) => ({ p, total: events.length, share: events.length / total }))
+      .sort((a, b) => b.total - a.total);
+    if (!rows.length) { tbody.appendChild(emptyRow(3, "No events match the filters.")); return; }
+    for (const r of rows) {
+      const tr = create("tr");
+      tr.appendChild(create("td", { text: r.p }));
+      tr.appendChild(create("td", { cls: "num", text: r.total }));
+      const cell = create("td");
+      const track = create("div", { cls: "bar-track" });
+      const bar = create("span", { cls: "bar" });
+      bar.style.width = `${r.share * 100}%`;
+      track.appendChild(bar);
+      cell.appendChild(track);
+      cell.appendChild(create("span", { cls: "pill", text: ` ${(r.share * 100).toFixed(0)}%` }));
+      tr.appendChild(cell);
+      tbody.appendChild(tr);
+    }
+  }
+
+  function renderStale(filtered) {
+    const tbody = $("#t-stale tbody");
+    tbody.innerHTML = "";
+    const used = new Set(filtered.map((e) => e.command));
+    const usedPaths = new Set(filtered.map((e) => e.asset_path));
+    const UNTRACKABLE = new Set(["bridge", "rule"]);
+    const stale = state.inventory.filter((i) => !UNTRACKABLE.has(i.asset_type) && !used.has(i.name) && !usedPaths.has(i.asset_path));
+    if (!stale.length) { tbody.appendChild(emptyRow(3, "Every inventoried asset has at least one matching event.")); return; }
+    for (const i of stale) {
+      const tr = create("tr");
+      tr.appendChild(create("td", { text: i.name }));
+      tr.appendChild(create("td", { text: i.asset_type }));
+      tr.appendChild(create("td", { text: i.asset_path }));
+      tbody.appendChild(tr);
+    }
+  }
+
+  function renderNotes(filtered) {
+    const tbody = $("#t-notes tbody");
+    tbody.innerHTML = "";
+    const rows = filtered
+      .filter((e) => e.note && e.outcome !== "completed")
+      .sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""));
+    if (!rows.length) { tbody.appendChild(emptyRow(5, "No friction notes recorded under current filters.")); return; }
+    for (const e of rows) {
+      const tr = create("tr");
+      tr.appendChild(create("td", { text: (e.timestamp || "").slice(0, 16).replace("T", " ") }));
+      tr.appendChild(create("td", { text: e.command }));
+      const oc = create("td");
+      oc.appendChild(create("span", { cls: `pill pill-${e.outcome}`, text: e.outcome }));
+      tr.appendChild(oc);
+      tr.appendChild(create("td", { text: e.developer_name || e.developer || "(unknown)" }));
+      tr.appendChild(create("td", { text: e.note }));
+      tbody.appendChild(tr);
+    }
+  }
+
+  function renderAbandoned(filtered) {
+    const tbody = $("#t-abandoned tbody");
+    tbody.innerHTML = "";
+    // Match started events that have no terminal event with the same command + developer within 24h
+    const starts = filtered.filter((e) => e.outcome === "started");
+    const closes = filtered.filter((e) => TERMINAL.has(e.outcome));
+    const isClosed = (s) => closes.some((c) =>
+      c.command === s.command &&
+      c.developer === s.developer &&
+      Math.abs(new Date(c.timestamp) - new Date(s.timestamp)) <= 24 * 3600 * 1000 &&
+      c.timestamp >= s.timestamp
+    );
+    const abandoned = starts.filter((s) => !isClosed(s))
+      .sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""));
+    if (!abandoned.length) { tbody.appendChild(emptyRow(4, "All started workflows have a matching terminal event.")); return; }
+    for (const e of abandoned) {
+      const tr = create("tr");
+      tr.appendChild(create("td", { text: (e.timestamp || "").slice(0, 16).replace("T", " ") }));
+      tr.appendChild(create("td", { text: e.command }));
+      tr.appendChild(create("td", { text: e.developer_name || e.developer || "(unknown)" }));
+      tr.appendChild(create("td", { text: e.platform }));
+      tbody.appendChild(tr);
+    }
+  }
+
+  const PIE_COLORS = {
+    completed: "#16a34a",
+    partial: "#d97706",
+    blocked: "#dc2626",
+    failed: "#b91c1c",
+    skipped: "#6b7280",
+    started: "rgba(37,99,235,0.4)",
+  };
+
+  function makePie(counts, size) {
+    size = size || 40;
+    const keys = ["completed", "partial", "blocked", "failed", "skipped", "started"];
+    const total = keys.reduce((s, k) => s + (counts[k] || 0), 0);
+    const r = size / 2 - 2;
+    const cx = size / 2, cy = size / 2;
+    if (!total) {
+      return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--border)"/></svg>`;
+    }
+    const parts = [];
+    let start = -Math.PI / 2;
+    for (const key of keys) {
+      const n = counts[key] || 0;
+      if (!n) continue;
+      const sweep = (n / total) * 2 * Math.PI;
+      const end = start + sweep;
+      const color = PIE_COLORS[key];
+      if (n === total) {
+        parts.push(`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}"/>`);
+      } else {
+        const x1 = (cx + r * Math.cos(start)).toFixed(2);
+        const y1 = (cy + r * Math.sin(start)).toFixed(2);
+        const x2 = (cx + r * Math.cos(end)).toFixed(2);
+        const y2 = (cy + r * Math.sin(end)).toFixed(2);
+        parts.push(`<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${sweep > Math.PI ? 1 : 0} 1 ${x2},${y2} Z" fill="${color}" title="${key}:${n}"/>`);
+      }
+      start = end;
+    }
+    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${parts.join("")}</svg>`;
+  }
+
+  function renderRepoCards(allEvents) {
+    const container = $("#repo-cards");
+    container.innerHTML = "";
+    const repos = new Map();
+    for (const e of allEvents) {
+      const key = e.repo || "(unknown)";
+      if (!repos.has(key)) repos.set(key, { count: 0, devs: new Set(), counts: {} });
+      const d = repos.get(key);
+      d.count++;
+      if (e.developer) d.devs.add(e.developer);
+      d.counts[e.outcome] = (d.counts[e.outcome] || 0) + 1;
+    }
+    const sorted = [...repos.entries()].sort((a, b) => b[1].count - a[1].count);
+    for (const [repo, data] of sorted) {
+      const parts = repo.split("/");
+      const name = parts.length > 1 ? parts[parts.length - 1] : repo;
+      const rawOwner = parts.length > 1 ? parts.slice(0, -1).join("/") : "";
+      const { display_name: dn, github_handle: gh } = state.profile || {};
+      const owner = (gh && dn && rawOwner === gh) ? dn : rawOwner;
+      const isActive = state.filters.repo === repo;
+      const card = create("div", { cls: "repo-card" + (isActive ? " active" : "") });
+      card.innerHTML = makePie(data.counts, 40);
+      const info = create("div", { cls: "rc-info" });
+      info.appendChild(create("div", { cls: "rc-name", text: name }));
+      if (owner) info.appendChild(create("div", { cls: "rc-owner", text: owner }));
+      info.appendChild(create("div", { cls: "rc-stats", text: `${data.count} events · ${data.devs.size} dev${data.devs.size !== 1 ? "s" : ""}` }));
+      card.appendChild(info);
+      card.addEventListener("click", () => {
+        state.filters.repo = isActive ? "" : repo;
+        $("#f-repo").value = state.filters.repo;
+        render();
+      });
+      container.appendChild(card);
+    }
+  }
+
+  function emptyRow(cols, text) {
+    const tr = create("tr");
+    const td = create("td", { text, cls: "empty", attrs: { colspan: String(cols) } });
+    tr.appendChild(td);
+    return tr;
+  }
+
+  function render() {
+    $("#loader").hidden = true;
+    $("#dashboard").hidden = false;
+    populateFilters();
+    renderRepoCards(state.events);   // always uses all events, not filtered
+    const filtered = applyFilters(state.events);
+    renderKpis(filtered);
+    renderWorkflowTable(filtered);
+    renderDeveloperTable(filtered);
+    renderPlatformTable(filtered);
+    renderStale(filtered);
+    renderNotes(filtered);
+    renderAbandoned(filtered);
+  }
+
+  autoLoad();
+})();
+</script>
+</body>
+</html>
