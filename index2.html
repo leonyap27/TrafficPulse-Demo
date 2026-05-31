@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<!--
+  TrafficPulse Demo Dashboard — TD-2
+  ===================================
+  Dataset: data/traffic_incidents.json
+    - 5 dummy incidents across Singapore expressways (PIE, CTE, AYE, BKE, ECP)
+    - Fields: incident_id, timestamp, road_name, location, type, severity, status
+    - Severity levels: High | Medium | Low
+    - Incident types: Accident | Congestion | Roadwork | Breakdown
+    - Status values: Active | Resolved
+
+  How to run:
+    Open this file directly in a browser — no server required.
+    The dataset is embedded in the DATA constant below.
+    To update incidents, edit the DATA array in the <script> block.
+
+  Tests:
+    Open the browser console and call runTests() to execute built-in assertions,
+    or click the "Run tests" button at the bottom of the page.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrafficPulse — Incident Dashboard (TD-2)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand:     #0d5c8f;
+      --brand-dk:  #09405f;
+      --accent:    #f5a623;
+      --bg:        #eef2f7;
+      --card-bg:   #ffffff;
+      --text:      #1c2a3a;
+      --muted:     #5e7080;
+      --border:    #d4dde8;
+      --radius:    8px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--brand-dk);
+      color: #fff;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .header-brand { display: flex; align-items: center; gap: 10px; }
+    .header-brand h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: .3px; }
+    .header-brand h1 span { color: var(--accent); }
+    .header-brand .pill {
+      background: var(--brand);
+      color: #c8e4f8;
+      font-size: .7rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 600;
+      letter-spacing: .5px;
+    }
+    #latest-ts {
+      font-size: .8rem;
+      color: #9dbcd4;
+      white-space: nowrap;
+    }
+
+    /* ── Layout ── */
+    main { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+
+    /* ── Section heading ── */
+    .section-label {
+      font-size: .7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    /* ── Stat cards ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 18px 16px 14px;
+      border-top: 3px solid transparent;
+      box-shadow: 0 1px 3px rgba(0,0,0,.07);
+    }
+    .card .label { font-size: .7rem; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 6px; }
+    .card .value { font-size: 2.1rem; font-weight: 800; line-height: 1; }
+
+    .card.total     { border-color: var(--brand); }   .card.total .value     { color: var(--brand); }
+    .card.high-sev  { border-color: #c0392b; }        .card.high-sev .value  { color: #c0392b; }
+    .card.accident  { border-color: #e67e22; }        .card.accident .value  { color: #e67e22; }
+    .card.congestion{ border-color: #16a085; }        .card.congestion .value{ color: #16a085; }
+    .card.roadwork  { border-color: #27ae60; }        .card.roadwork .value  { color: #27ae60; }
+    .card.breakdown { border-color: #8e44ad; }        .card.breakdown .value { color: #8e44ad; }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .control-wrap { position: relative; flex: 1; min-width: 200px; }
+    .control-wrap .icon {
+      position: absolute;
+      left: 11px; top: 50%;
+      transform: translateY(-50%);
+      font-size: .9rem;
+      pointer-events: none;
+      color: var(--muted);
+    }
+    .controls input, .controls select {
+      width: 100%;
+      padding: 9px 12px 9px 32px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: .875rem;
+      background: var(--card-bg);
+      color: var(--text);
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .controls input:focus, .controls select:focus {
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(13,92,143,.12);
+    }
+
+    /* ── Result count ── */
+    #result-count {
+      font-size: .8rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    /* ── Table ── */
+    .table-wrap {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: 0 1px 3px rgba(0,0,0,.07);
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    thead { background: var(--brand-dk); color: #fff; }
+    thead th {
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 500;
+      letter-spacing: .2px;
+    }
+    tbody tr { border-bottom: 1px solid #edf1f5; transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f4f8fc; }
+    tbody td { padding: 11px 16px; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: .73rem;
+      font-weight: 600;
+    }
+    .sev-High   { background: #fdecea; color: #b71c1c; }
+    .sev-Medium { background: #fff3e0; color: #e65100; }
+    .sev-Low    { background: #e8f5e9; color: #1b5e20; }
+    .status-Active   { background: #e3f2fd; color: #0d47a1; }
+    .status-Resolved { background: #f3f4f6; color: #6b7280; }
+
+    /* ── Empty state ── */
+    .empty {
+      text-align: center;
+      padding: 52px 24px;
+      color: var(--muted);
+    }
+    .empty .empty-icon { font-size: 2.2rem; margin-bottom: 10px; }
+    .empty strong { display: block; margin-bottom: 4px; }
+    .empty p { font-size: .875rem; }
+
+    /* ── Tests ── */
+    #test-section { margin-top: 32px; }
+    #test-toggle {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 7px 16px;
+      cursor: pointer;
+      font-size: .82rem;
+      color: var(--muted);
+      transition: background .1s, border-color .1s;
+    }
+    #test-toggle:hover { background: #edf1f7; border-color: var(--brand); color: var(--brand); }
+    #test-output {
+      display: none;
+      margin-top: 10px;
+      background: #0d1b2a;
+      color: #a8e6cf;
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      font-family: "Courier New", monospace;
+      font-size: .81rem;
+      white-space: pre;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    #test-output .fail    { color: #ff7675; }
+    #test-output .pass    { color: #55efc4; }
+    #test-output .summary { color: var(--accent); font-weight: bold; margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-brand">
+    <h1>Traffic<span>Pulse</span></h1>
+    <span class="pill">TD-2</span>
+  </div>
+  <span id="latest-ts">Loading…</span>
+</header>
+
+<main>
+  <p class="section-label">Overview</p>
+  <div class="stats-grid" id="stats-grid"></div>
+
+  <p class="section-label">Incidents</p>
+  <div class="controls">
+    <div class="control-wrap">
+      <span class="icon">🔍</span>
+      <input id="search" type="text" placeholder="Search by road or location…" aria-label="Search incidents" />
+    </div>
+    <div class="control-wrap" style="flex:0;min-width:170px;">
+      <span class="icon">⚠️</span>
+      <select id="severity-filter" aria-label="Filter by severity">
+        <option value="">All Severities</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
+    </div>
+  </div>
+
+  <p id="result-count"></p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Timestamp</th>
+          <th>Road</th>
+          <th>Location</th>
+          <th>Type</th>
+          <th>Severity</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="incident-tbody"></tbody>
+    </table>
+    <div id="empty-state" class="empty" style="display:none">
+      <div class="empty-icon">🚦</div>
+      <strong>No incidents found</strong>
+      <p>Try a different search term or severity filter.</p>
+    </div>
+  </div>
+
+  <div id="test-section">
+    <button id="test-toggle" onclick="toggleTests()">Run built-in tests</button>
+    <pre id="test-output"></pre>
+  </div>
+</main>
+
+<script>
+  // ── Embedded dataset (mirrors data/traffic_incidents.json) ──────────────────
+  const DATA = [
+    { incident_id: "INC-001", timestamp: "2026-05-31T08:10:00+08:00", road_name: "PIE", location: "PIE near Toa Payoh",        type: "Accident",   severity: "High",   status: "Active"   },
+    { incident_id: "INC-002", timestamp: "2026-05-31T08:25:00+08:00", road_name: "CTE", location: "CTE before Braddell Road",  type: "Congestion", severity: "Medium", status: "Active"   },
+    { incident_id: "INC-003", timestamp: "2026-05-31T08:40:00+08:00", road_name: "AYE", location: "AYE near Clementi Ave 2",   type: "Roadwork",   severity: "Low",    status: "Active"   },
+    { incident_id: "INC-004", timestamp: "2026-05-31T09:05:00+08:00", road_name: "BKE", location: "BKE towards Woodlands",     type: "Breakdown",  severity: "Medium", status: "Resolved" },
+    { incident_id: "INC-005", timestamp: "2026-05-31T09:20:00+08:00", road_name: "ECP", location: "ECP near Fort Road",        type: "Accident",   severity: "High",   status: "Active"   },
+  ];
+
+  // ── Pure helpers ─────────────────────────────────────────────────────────────
+  function formatTs(iso) {
+    const d = new Date(iso);
+    return isNaN(d) ? iso : d.toLocaleString("en-SG", { dateStyle: "medium", timeStyle: "short" });
+  }
+
+  function latestTimestamp(records) {
+    if (!records.length) return null;
+    return records.reduce((max, r) => r.timestamp > max ? r.timestamp : max, records[0].timestamp);
+  }
+
+  function computeStats(records) {
+    const total  = records.length;
+    const high   = records.filter(r => r.severity === "High").length;
+    const byType = { Accident: 0, Congestion: 0, Roadwork: 0, Breakdown: 0 };
+    records.forEach(r => { if (r.type in byType) byType[r.type]++; });
+    return { total, high, byType };
+  }
+
+  function filterRecords(records, { query, severity }) {
+    const q = (query || "").toLowerCase();
+    return records.filter(r => {
+      const matchSev = !severity || r.severity === severity;
+      const matchQ   = !q || r.road_name.toLowerCase().includes(q) || r.location.toLowerCase().includes(q);
+      return matchSev && matchQ;
+    });
+  }
+
+  // ── Render stats (always reflects full dataset) ───────────────────────────────
+  function renderStats() {
+    const { total, high, byType } = computeStats(DATA);
+    const cards = [
+      { cls: "total",      label: "Total",      value: total             },
+      { cls: "high-sev",   label: "High",       value: high              },
+      { cls: "accident",   label: "Accidents",  value: byType.Accident   },
+      { cls: "congestion", label: "Congestion", value: byType.Congestion },
+      { cls: "roadwork",   label: "Roadworks",  value: byType.Roadwork   },
+      { cls: "breakdown",  label: "Breakdowns", value: byType.Breakdown  },
+    ];
+    document.getElementById("stats-grid").innerHTML = cards.map(c => `
+      <div class="card ${c.cls}">
+        <div class="label">${c.label}</div>
+        <div class="value">${c.value}</div>
+      </div>`).join("");
+  }
+
+  // ── Render table ─────────────────────────────────────────────────────────────
+  function renderTable(records) {
+    const tbody = document.getElementById("incident-tbody");
+    const empty = document.getElementById("empty-state");
+    const count = document.getElementById("result-count");
+
+    count.textContent = `Showing ${records.length} of ${DATA.length} incident${DATA.length !== 1 ? "s" : ""}`;
+
+    if (!records.length) {
+      tbody.innerHTML = "";
+      empty.style.display = "block";
+      return;
+    }
+    empty.style.display = "none";
+    tbody.innerHTML = records.map(r => `
+      <tr>
+        <td>${r.incident_id}</td>
+        <td>${formatTs(r.timestamp)}</td>
+        <td><strong>${r.road_name}</strong></td>
+        <td>${r.location}</td>
+        <td>${r.type}</td>
+        <td><span class="badge sev-${r.severity}">${r.severity}</span></td>
+        <td><span class="badge status-${r.status}">${r.status}</span></td>
+      </tr>`).join("");
+  }
+
+  // ── Main render ──────────────────────────────────────────────────────────────
+  function render() {
+    const query    = document.getElementById("search").value;
+    const severity = document.getElementById("severity-filter").value;
+    renderTable(filterRecords(DATA, { query, severity }));
+  }
+
+  // ── Latest timestamp ─────────────────────────────────────────────────────────
+  function renderTimestamp() {
+    const el = document.getElementById("latest-ts");
+    const ts = latestTimestamp(DATA);
+    el.textContent = ts ? "Latest: " + formatTs(ts) : "No data";
+  }
+
+  // ── Event listeners ──────────────────────────────────────────────────────────
+  document.getElementById("search").addEventListener("input", render);
+  document.getElementById("severity-filter").addEventListener("change", render);
+
+  // ── Init ─────────────────────────────────────────────────────────────────────
+  renderTimestamp();
+  renderStats();
+  render();
+
+  // ── Built-in tests ───────────────────────────────────────────────────────────
+  function runTests() {
+    const log = [];
+    let passed = 0, failed = 0;
+
+    function assert(desc, condition) {
+      if (condition) { log.push({ pass: true,  msg: `PASS  ${desc}` }); passed++; }
+      else           { log.push({ pass: false, msg: `FAIL  ${desc}` }); failed++;  }
+    }
+
+    // computeStats — full dataset
+    const s = computeStats(DATA);
+    assert("total incidents = 5",      s.total === 5);
+    assert("high severity count = 2",  s.high === 2);
+    assert("Accident count = 2",       s.byType.Accident === 2);
+    assert("Congestion count = 1",     s.byType.Congestion === 1);
+    assert("Roadwork count = 1",       s.byType.Roadwork === 1);
+    assert("Breakdown count = 1",      s.byType.Breakdown === 1);
+
+    // computeStats — empty
+    const se = computeStats([]);
+    assert("empty dataset: total = 0", se.total === 0);
+    assert("empty dataset: high = 0",  se.high === 0);
+
+    // latestTimestamp
+    assert("latestTimestamp = INC-005 ts", latestTimestamp(DATA) === "2026-05-31T09:20:00+08:00");
+    assert("latestTimestamp([]) = null",   latestTimestamp([]) === null);
+
+    // filterRecords — severity
+    assert("filter High = 2",  filterRecords(DATA, { query: "", severity: "High" }).length === 2);
+    assert("filter Low = 1",   filterRecords(DATA, { query: "", severity: "Low"  }).length === 1);
+    assert("filter '' = 5",    filterRecords(DATA, { query: "", severity: ""     }).length === 5);
+
+    // filterRecords — search by road
+    const pie = filterRecords(DATA, { query: "PIE", severity: "" });
+    assert("search 'PIE' returns INC-001", pie.length === 1 && pie[0].incident_id === "INC-001");
+
+    // filterRecords — search by location keyword
+    const wdl = filterRecords(DATA, { query: "woodlands", severity: "" });
+    assert("search 'woodlands' returns INC-004", wdl.length === 1 && wdl[0].incident_id === "INC-004");
+
+    // filterRecords — no match
+    assert("no match → empty array", filterRecords(DATA, { query: "xyz999", severity: "" }).length === 0);
+
+    // filterRecords — combined
+    const comb = filterRecords(DATA, { query: "ECP", severity: "High" });
+    assert("ECP + High = INC-005", comb.length === 1 && comb[0].incident_id === "INC-005");
+
+    // filterRecords — case-insensitive
+    const lc = filterRecords(DATA, { query: "pie", severity: "" });
+    assert("search is case-insensitive", lc.length === 1 && lc[0].incident_id === "INC-001");
+
+    return { log, passed, failed };
+  }
+
+  function toggleTests() {
+    const out = document.getElementById("test-output");
+    if (out.style.display === "block") { out.style.display = "none"; return; }
+    const { log, passed, failed } = runTests();
+    out.innerHTML = log.map(r => `<span class="${r.pass ? "pass" : "fail"}">${r.msg}</span>`).join("\n")
+      + `\n<span class="summary">── ${passed} passed, ${failed} failed ──</span>`;
+    out.style.display = "block";
+  }
+</script>
+</body>
+</html>
