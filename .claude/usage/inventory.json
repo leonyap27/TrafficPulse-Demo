@@ -1,7 +1,13 @@
 {
-  "generated_at": "2026-05-31T16:28:24+08:00",
+  "generated_at": "2026-06-01T22:37:17+08:00",
   "count": 25,
   "entries": [
+    {
+      "asset_path": ".claude/agents/dashboard-ui-ux.md",
+      "asset_type": "agent",
+      "name": "dashboard-ui-ux",
+      "description": "UI/UX specialist for the TrafficPulse incident dashboard. Use when a change touches the dashboard HTML/CSS/JS (e.g. `index*.html`, dashboard React components, zone pages, or any layout / interaction / accessibility / data-vis surface). Owns the visual contract from data shape → rendered state. Can read, edit, and exercise the dashboard in a browser; surfaces evidence before claiming done."
+    },
     {
       "asset_path": ".claude/agents/rag-architect.md",
       "asset_type": "agent",
@@ -19,12 +25,6 @@
       "asset_type": "bridge",
       "name": "ONBOARDING.md",
       "description": "Onboarding — Funding Paper Agent"
-    },
-    {
-      "asset_path": "AGENTS.md",
-      "asset_type": "bridge",
-      "name": "AGENTS.md",
-      "description": "AGENTS.md"
     },
     {
       "asset_path": ".claude/commands/api-change.md",
