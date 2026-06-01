@@ -110,7 +110,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 $CLAUDE_PROJECT_DIR/scripts/publish_usage.py --quiet"
+            "command": "test -f \"$CLAUDE_PROJECT_DIR/scripts/publish_usage.py\" && python3 \"$CLAUDE_PROJECT_DIR/scripts/publish_usage.py\" --quiet || true"
           }
         ]
       }

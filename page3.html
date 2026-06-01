@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<!--
+  TrafficPulse Demo Dashboard — TD-7 (page3.html)
+  ================================================
+  Dataset: data/traffic_incidents.json (embedded inline below)
+  Angle:   Recent traffic situation — freshness / time-window framing.
+  Mirrors design tokens from index1.html (TD-1 baseline) for project consistency.
+
+  How to run:
+    Open this file directly in a browser (file://) — no server required, no
+    network calls, no external dependencies.
+
+  Tests:
+    Open the browser console and call runTests() to execute built-in assertions
+    against the embedded dataset.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrafficPulse — Recent Traffic Situation</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f0f2f5;
+      --ink: #1a1a2e;
+      --muted: #5f6368;
+      --line: #e7e9ee;
+      --card: #fff;
+      --accent: #f0c040;
+      --focus: #1967d2;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--ink);
+      color: #fff;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    header .brand h1 { font-size: 1.35rem; letter-spacing: .5px; }
+    header .brand h1 span { color: var(--accent); }
+    header .brand .sub { font-size: .8rem; color: #aab; margin-top: 4px; }
+    header .now-pill {
+      background: #2a2a44;
+      border: 1px solid #3a3a5a;
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: .8rem;
+      color: #d8d8ee;
+    }
+    header .now-pill strong { color: var(--accent); margin-left: 6px; }
+
+    /* ── Layout ── */
+    main { max-width: 1200px; margin: 0 auto; padding: 28px 24px 64px; }
+    section { margin-bottom: 28px; }
+    section h2 {
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    /* ── KPI cards ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 18px 18px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      min-height: 96px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .card .label { font-size: .72rem; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+    .card .value { font-size: 2rem; font-weight: 700; line-height: 1; }
+    .card .hint  { font-size: .7rem; color: var(--muted); }
+    .card.red    .value { color: #d93025; }
+    .card.amber  .value { color: #e8700a; }
+    .card.blue   .value { color: #1967d2; }
+    .card.green  .value { color: #188038; }
+    .card.teal   .value { color: #007b83; }
+    .card.purple .value { color: #7627bb; }
+
+    /* ── Time-window chips ── */
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .chip {
+      background: #fff;
+      border: 1px solid #d0d5dd;
+      color: var(--ink);
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: .82rem;
+      cursor: pointer;
+      transition: background .12s, border-color .12s, color .12s;
+      font-family: inherit;
+    }
+    .chip:hover { background: #f5f6fa; }
+    .chip:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+    .chip[aria-pressed="true"] {
+      background: var(--ink);
+      color: #fff;
+      border-color: var(--ink);
+    }
+
+    /* ── Feed ── */
+    .feed { background: var(--card); border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.08); overflow: hidden; }
+    .bucket-head {
+      background: #fafbfd;
+      padding: 10px 18px;
+      font-size: .8rem;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      letter-spacing: .3px;
+    }
+    .bucket-head:first-child { border-top: none; }
+    .bucket-head strong { color: var(--ink); }
+    .feed-row {
+      display: grid;
+      grid-template-columns: 56px 90px 110px 1fr 90px 80px;
+      gap: 12px;
+      padding: 11px 18px;
+      align-items: center;
+      border-top: 1px solid var(--line);
+      font-size: .87rem;
+    }
+    .feed-row .time { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .feed-row .road { font-weight: 600; }
+    .feed-row .type { color: var(--muted); font-size: .82rem; }
+    .feed-row .lanes, .feed-row .delay { font-size: .78rem; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+    .feed-row.resolved { opacity: .55; }
+    .feed-row.resolved .road { font-weight: 500; }
+    .feed-empty { padding: 32px 18px; text-align: center; color: var(--muted); font-size: .88rem; }
+
+    /* ── Heatmap ── */
+    .heatmap-wrap { background: var(--card); border-radius: 10px; padding: 16px 18px; box-shadow: 0 1px 4px rgba(0,0,0,.08); overflow-x: auto; }
+    .heatmap {
+      display: grid;
+      grid-auto-flow: column;
+      gap: 4px;
+      min-width: 480px;
+    }
+    .heatmap .col { display: grid; grid-template-rows: 18px 26px 26px 26px; gap: 4px; }
+    .heatmap .hcell {
+      border-radius: 4px;
+      font-size: .68rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+    }
+    .heatmap .hcell.label { color: var(--muted); font-size: .7rem; }
+    .heatmap .hcell.row-label { background: transparent; justify-content: flex-end; padding-right: 6px; }
+    .heatmap .hcell[data-row="High"]   { background: #fce8e6; color: #c5221f; }
+    .heatmap .hcell[data-row="Medium"] { background: #fef3e2; color: #b06000; }
+    .heatmap .hcell[data-row="Low"]    { background: #e6f4ea; color: #137333; }
+    .heatmap .hcell[data-count="0"]    { background: #f5f6fa; color: #c0c4cc; }
+    .heatmap .hcell[data-count="1"]    { opacity: .55; }
+    .heatmap .hcell[data-count="2"]    { opacity: .8; }
+    .heatmap .legend { margin-top: 10px; font-size: .72rem; color: var(--muted); display: flex; gap: 14px; }
+
+    /* ── Road impact chips ── */
+    .road-strip { display: flex; flex-wrap: wrap; gap: 8px; }
+    .road-chip {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 14px 7px 16px;
+      font-size: .82rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .road-chip .road-name { font-weight: 600; }
+    .road-chip .dots { display: inline-flex; gap: 3px; }
+    .road-chip .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .road-chip .dot.High   { background: #d93025; }
+    .road-chip .dot.Medium { background: #e8700a; }
+    .road-chip .dot.Low    { background: #188038; }
+    .road-chip .empty-dot { color: var(--muted); font-size: .72rem; }
+
+    /* ── Table ── */
+    .table-wrap {
+      background: var(--card);
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+    thead { background: var(--ink); color: #fff; }
+    thead th {
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 500;
+      letter-spacing: .3px;
+      cursor: pointer;
+      user-select: none;
+    }
+    thead th:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+    thead th .sort-ind { color: var(--accent); font-size: .7rem; margin-left: 4px; }
+    tbody tr { border-bottom: 1px solid var(--line); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f7f8ff; }
+    tbody tr.resolved { color: #6a6f78; }
+    tbody td { padding: 11px 16px; font-variant-numeric: tabular-nums; }
+    tbody td.id { font-family: "SF Mono", "Menlo", "Courier New", monospace; font-size: .8rem; color: var(--muted); }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+    .sev-High   { background: #fce8e6; color: #c5221f; }
+    .sev-Medium { background: #fef3e2; color: #b06000; }
+    .sev-Low    { background: #e6f4ea; color: #137333; }
+    .status-Active   { background: #e8f0fe; color: #1967d2; }
+    .status-Resolved { background: #f1f3f4; color: #5f6368; text-decoration: line-through; text-decoration-color: #9aa0a6; }
+
+    /* ── Assumptions footer ── */
+    .assumptions {
+      background: #fffbe8;
+      border: 1px solid #f0e4a8;
+      border-radius: 10px;
+      padding: 16px 18px;
+      font-size: .83rem;
+      color: #5b4a00;
+    }
+    .assumptions h2 { color: #5b4a00; margin-bottom: 8px; }
+    .assumptions ul { padding-left: 18px; }
+    .assumptions li + li { margin-top: 4px; }
+
+    /* ── Tests ── */
+    #test-section { margin-top: 36px; }
+    #test-toggle {
+      background: none; border: 1px solid #d0d5dd; border-radius: 8px;
+      padding: 7px 16px; cursor: pointer; font-size: .85rem; color: var(--muted);
+      font-family: inherit;
+    }
+    #test-toggle:hover { background: #f5f5f5; }
+    #test-output {
+      display: none;
+      margin-top: 12px;
+      background: var(--ink);
+      color: #c8f7c5;
+      border-radius: 8px;
+      padding: 16px 20px;
+      font-family: "Courier New", monospace;
+      font-size: .82rem;
+      white-space: pre;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    #test-output .fail { color: #ff6b6b; }
+    #test-output .pass { color: #74ee85; }
+    #test-output .summary { color: var(--accent); font-weight: bold; margin-top: 8px; }
+
+    @media (max-width: 720px) {
+      .feed-row { grid-template-columns: 50px 1fr 70px; }
+      .feed-row .type, .feed-row .lanes { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>Traffic<span>Pulse</span> &mdash; Recent Traffic Situation</h1>
+    <div class="sub" id="snapshot-window">Loading snapshot…</div>
+  </div>
+  <div class="now-pill" id="now-pill" aria-live="polite">
+    Snapshot anchored to <strong id="now-stamp">—</strong>
+  </div>
+</header>
+
+<main>
+
+  <!-- KPI cards (anchored to "now"; not filtered by chips) -->
+  <section aria-labelledby="kpi-h">
+    <h2 id="kpi-h">Right now</h2>
+    <div class="stats-grid" id="kpi-grid"></div>
+  </section>
+
+  <!-- Time-window chips + feed -->
+  <section aria-labelledby="feed-h">
+    <h2 id="feed-h">Chronological feed</h2>
+    <div class="chips" id="window-chips" role="group" aria-label="Time window filter"></div>
+    <div class="feed" id="feed" aria-live="polite" style="margin-top:14px"></div>
+  </section>
+
+  <!-- Severity-by-hour heatmap -->
+  <section aria-labelledby="heat-h">
+    <h2 id="heat-h">Severity by hour</h2>
+    <div class="heatmap-wrap">
+      <div class="heatmap" id="heatmap" role="img" aria-label="Severity-by-hour heatmap"></div>
+      <div class="legend">
+        <span>Counts shown in cells.</span>
+        <span>Empty hours rendered in grey.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Road impact chips -->
+  <section aria-labelledby="road-h">
+    <h2 id="road-h">Road impact (active only)</h2>
+    <div class="road-strip" id="road-strip"></div>
+  </section>
+
+  <!-- Full incident table -->
+  <section aria-labelledby="table-h">
+    <h2 id="table-h">All incidents in snapshot</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr id="table-head"></tr>
+        </thead>
+        <tbody id="incident-tbody"></tbody>
+      </table>
+      <div id="empty-state" class="feed-empty" style="display:none">No incidents match the current window.</div>
+    </div>
+  </section>
+
+  <!-- Assumptions -->
+  <section aria-labelledby="ass-h" class="assumptions">
+    <h2 id="ass-h">Assumptions</h2>
+    <ul>
+      <li>The dataset is a static snapshot embedded in this page. There is no live refresh and no server call.</li>
+      <li>&quot;Now&quot; is anchored to the latest timestamp in the dataset (<span id="ass-now">—</span>), not wall-clock time, so the page is reproducible for demos.</li>
+      <li>KPI cards are global situational-awareness counts and ignore the time-window chips. Chips only filter the chronological feed and the incident table below the heatmap.</li>
+      <li>&quot;Lanes affected right now&quot; sums lanes across all active incidents; overlapping lanes on the same road are not de-duplicated.</li>
+      <li>Resolved incidents stay visible but are visually de-emphasised so operators can see what just cleared.</li>
+      <li>This is dummy data for demo purposes — not a real LTA feed.</li>
+    </ul>
+  </section>
+
+  <!-- Tests -->
+  <div id="test-section">
+    <button id="test-toggle" type="button">Run built-in tests</button>
+    <pre id="test-output"></pre>
+  </div>
+
+</main>
+
+<!-- Embedded dataset — see data/traffic_incidents.json (kept in sync manually for the demo) -->
+<script type="application/json" id="incident-data">
+[
+  {"incident_id":"INC-001","timestamp":"2026-05-31T07:45:00+08:00","road_name":"PIE","location":"PIE near Toa Payoh","type":"Accident","severity":"High","status":"Active","lanes_affected":2,"estimated_delay_min":28},
+  {"incident_id":"INC-002","timestamp":"2026-05-31T07:52:00+08:00","road_name":"CTE","location":"CTE before Braddell Road","type":"Congestion","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":14},
+  {"incident_id":"INC-003","timestamp":"2026-05-31T08:03:00+08:00","road_name":"AYE","location":"AYE near Clementi Ave 2","type":"Roadwork","severity":"Low","status":"Active","lanes_affected":1,"estimated_delay_min":6},
+  {"incident_id":"INC-004","timestamp":"2026-05-31T08:12:00+08:00","road_name":"BKE","location":"BKE towards Woodlands","type":"Breakdown","severity":"Medium","status":"Resolved","lanes_affected":1,"estimated_delay_min":10},
+  {"incident_id":"INC-005","timestamp":"2026-05-31T08:18:00+08:00","road_name":"ECP","location":"ECP near Fort Road","type":"Accident","severity":"High","status":"Active","lanes_affected":2,"estimated_delay_min":32},
+  {"incident_id":"INC-006","timestamp":"2026-05-31T08:26:00+08:00","road_name":"SLE","location":"SLE after Mandai Road","type":"Congestion","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":18},
+  {"incident_id":"INC-007","timestamp":"2026-05-31T08:37:00+08:00","road_name":"KPE","location":"KPE tunnel towards ECP","type":"Breakdown","severity":"High","status":"Active","lanes_affected":1,"estimated_delay_min":25},
+  {"incident_id":"INC-008","timestamp":"2026-05-31T08:44:00+08:00","road_name":"MCE","location":"MCE before Central Boulevard","type":"Congestion","severity":"Low","status":"Resolved","lanes_affected":0,"estimated_delay_min":4},
+  {"incident_id":"INC-009","timestamp":"2026-05-31T08:55:00+08:00","road_name":"TPE","location":"TPE near Punggol Road","type":"Roadwork","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":12},
+  {"incident_id":"INC-010","timestamp":"2026-05-31T09:02:00+08:00","road_name":"PIE","location":"PIE before Stevens Road","type":"Congestion","severity":"High","status":"Active","lanes_affected":2,"estimated_delay_min":35},
+  {"incident_id":"INC-011","timestamp":"2026-05-31T09:10:00+08:00","road_name":"CTE","location":"CTE near Ang Mo Kio Ave 1","type":"Accident","severity":"High","status":"Active","lanes_affected":2,"estimated_delay_min":30},
+  {"incident_id":"INC-012","timestamp":"2026-05-31T09:16:00+08:00","road_name":"AYE","location":"AYE towards City before Alexandra","type":"Congestion","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":16},
+  {"incident_id":"INC-013","timestamp":"2026-05-31T09:21:00+08:00","road_name":"ECP","location":"ECP near Marine Parade","type":"Breakdown","severity":"Low","status":"Resolved","lanes_affected":0,"estimated_delay_min":5},
+  {"incident_id":"INC-014","timestamp":"2026-05-31T09:30:00+08:00","road_name":"BKE","location":"BKE before PIE exit","type":"Congestion","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":17},
+  {"incident_id":"INC-015","timestamp":"2026-05-31T09:38:00+08:00","road_name":"Lornie Road","location":"Lornie Road towards Adam Road","type":"Roadwork","severity":"Low","status":"Active","lanes_affected":1,"estimated_delay_min":7},
+  {"incident_id":"INC-016","timestamp":"2026-05-31T09:45:00+08:00","road_name":"PIE","location":"PIE near Jurong Town Hall","type":"Accident","severity":"Medium","status":"Resolved","lanes_affected":1,"estimated_delay_min":13},
+  {"incident_id":"INC-017","timestamp":"2026-05-31T09:53:00+08:00","road_name":"CTE","location":"CTE tunnel towards city","type":"Congestion","severity":"High","status":"Active","lanes_affected":2,"estimated_delay_min":36},
+  {"incident_id":"INC-018","timestamp":"2026-05-31T10:01:00+08:00","road_name":"SLE","location":"SLE near Woodlands Ave 2","type":"Breakdown","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":15},
+  {"incident_id":"INC-019","timestamp":"2026-05-31T10:09:00+08:00","road_name":"TPE","location":"TPE towards PIE","type":"Accident","severity":"High","status":"Active","lanes_affected":2,"estimated_delay_min":33},
+  {"incident_id":"INC-020","timestamp":"2026-05-31T10:15:00+08:00","road_name":"KJE","location":"KJE near Choa Chu Kang","type":"Congestion","severity":"Low","status":"Resolved","lanes_affected":0,"estimated_delay_min":4},
+  {"incident_id":"INC-021","timestamp":"2026-05-31T10:22:00+08:00","road_name":"MCE","location":"MCE towards AYE","type":"Congestion","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":19},
+  {"incident_id":"INC-022","timestamp":"2026-05-31T10:30:00+08:00","road_name":"Nicoll Highway","location":"Nicoll Highway near Stadium","type":"Roadwork","severity":"Low","status":"Active","lanes_affected":1,"estimated_delay_min":8},
+  {"incident_id":"INC-023","timestamp":"2026-05-31T10:37:00+08:00","road_name":"ECP","location":"ECP towards Changi Airport","type":"Congestion","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":20},
+  {"incident_id":"INC-024","timestamp":"2026-05-31T10:45:00+08:00","road_name":"AYE","location":"AYE near Buona Vista","type":"Breakdown","severity":"High","status":"Active","lanes_affected":1,"estimated_delay_min":24},
+  {"incident_id":"INC-025","timestamp":"2026-05-31T10:52:00+08:00","road_name":"PIE","location":"PIE towards Changi after Eunos","type":"Congestion","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":18},
+  {"incident_id":"INC-026","timestamp":"2026-05-31T11:00:00+08:00","road_name":"CTE","location":"CTE near Havelock Road","type":"Roadwork","severity":"Low","status":"Resolved","lanes_affected":0,"estimated_delay_min":3},
+  {"incident_id":"INC-027","timestamp":"2026-05-31T11:08:00+08:00","road_name":"BKE","location":"BKE towards PIE before Dairy Farm","type":"Accident","severity":"High","status":"Active","lanes_affected":2,"estimated_delay_min":31},
+  {"incident_id":"INC-028","timestamp":"2026-05-31T11:15:00+08:00","road_name":"KPE","location":"KPE near Tampines Road","type":"Congestion","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":16},
+  {"incident_id":"INC-029","timestamp":"2026-05-31T11:23:00+08:00","road_name":"TPE","location":"TPE near Loyang Ave","type":"Breakdown","severity":"Low","status":"Resolved","lanes_affected":0,"estimated_delay_min":5},
+  {"incident_id":"INC-030","timestamp":"2026-05-31T11:31:00+08:00","road_name":"PIE","location":"PIE near Bedok North","type":"Accident","severity":"High","status":"Active","lanes_affected":2,"estimated_delay_min":34}
+]
+</script>
+
+<script>
+  // ── Load embedded dataset ────────────────────────────────────────────────────
+  const DATA = JSON.parse(document.getElementById("incident-data").textContent);
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  const MS_MIN = 60 * 1000;
+
+  function parseTs(iso) { return new Date(iso).getTime(); }
+
+  function formatTimeHM(iso) {
+    const d = new Date(iso);
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    return `${hh}:${mm}`;
+  }
+
+  function formatTsFull(iso) {
+    const d = new Date(iso);
+    return isNaN(d) ? iso : d.toLocaleString("en-SG", { dateStyle: "medium", timeStyle: "short" });
+  }
+
+  function latestTimestamp(records) {
+    if (!records.length) return null;
+    return records.reduce((max, r) => r.timestamp > max ? r.timestamp : max, records[0].timestamp);
+  }
+  function earliestTimestamp(records) {
+    if (!records.length) return null;
+    return records.reduce((min, r) => r.timestamp < min ? r.timestamp : min, records[0].timestamp);
+  }
+
+  // KPIs (anchored to "now" — global situational awareness, not chip-filtered)
+  function computeKpis(records, nowIso) {
+    const now = parseTs(nowIso);
+    const active = records.filter(r => r.status === "Active");
+    const highActive = active.filter(r => r.severity === "High");
+    const lanes = active.reduce((s, r) => s + (r.lanes_affected || 0), 0);
+    const worstDelay = active.reduce((m, r) => Math.max(m, r.estimated_delay_min || 0), 0);
+    const inWindow = (mins) => records.filter(r => parseTs(r.timestamp) >= now - mins * MS_MIN).length;
+    return {
+      active: active.length,
+      highActive: highActive.length,
+      lanes,
+      worstDelay,
+      last60: inWindow(60),
+      last30: inWindow(30),
+    };
+  }
+
+  // Window-filtering for feed + table
+  function withinWindow(records, nowIso, mins) {
+    if (mins === Infinity) return records.slice();
+    const cutoff = parseTs(nowIso) - mins * MS_MIN;
+    return records.filter(r => parseTs(r.timestamp) >= cutoff);
+  }
+
+  // Group into 15-minute buckets (newest bucket first)
+  function bucketize(records, bucketMin = 15) {
+    const buckets = new Map();
+    for (const r of records) {
+      const t = new Date(r.timestamp);
+      const minute = Math.floor(t.getMinutes() / bucketMin) * bucketMin;
+      t.setMinutes(minute, 0, 0);
+      const key = t.toISOString();
+      if (!buckets.has(key)) buckets.set(key, []);
+      buckets.get(key).push(r);
+    }
+    const sorted = Array.from(buckets.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+    return sorted.map(([startIso, items]) => {
+      const start = new Date(startIso);
+      const end = new Date(start.getTime() + bucketMin * MS_MIN);
+      const fmt = (d) => `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+      return {
+        startIso,
+        label: `${fmt(start)} – ${fmt(end)}`,
+        items: items.sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
+      };
+    });
+  }
+
+  // Severity-by-hour heatmap
+  function severityByHour(records) {
+    const hours = new Map(); // hour-iso -> {High, Medium, Low}
+    for (const r of records) {
+      const t = new Date(r.timestamp);
+      t.setMinutes(0, 0, 0);
+      const key = t.toISOString();
+      if (!hours.has(key)) hours.set(key, { High: 0, Medium: 0, Low: 0 });
+      hours.get(key)[r.severity]++;
+    }
+    return Array.from(hours.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([iso, counts]) => ({ iso, label: formatTimeHM(iso), counts }));
+  }
+
+  // Road impact (active only, sorted by active count desc, then road name)
+  function roadImpact(records) {
+    const map = new Map();
+    for (const r of records) {
+      if (r.status !== "Active") continue;
+      if (!map.has(r.road_name)) map.set(r.road_name, []);
+      map.get(r.road_name).push(r);
+    }
+    return Array.from(map.entries())
+      .map(([road, items]) => ({
+        road,
+        count: items.length,
+        dots: items.map(i => i.severity),
+      }))
+      .sort((a, b) => b.count - a.count || a.road.localeCompare(b.road));
+  }
+
+  // ── Rendering ───────────────────────────────────────────────────────────────
+  function renderHeader(nowIso) {
+    const earliest = earliestTimestamp(DATA);
+    document.getElementById("snapshot-window").textContent =
+      `Snapshot window: ${formatTsFull(earliest)} → ${formatTsFull(nowIso)}`;
+    document.getElementById("now-stamp").textContent = formatTsFull(nowIso);
+    document.getElementById("ass-now").textContent = formatTsFull(nowIso);
+  }
+
+  function renderKpis(nowIso) {
+    const k = computeKpis(DATA, nowIso);
+    const cards = [
+      { label: "Active incidents", value: k.active, hint: "status = Active", cls: "blue" },
+      { label: "High-severity active", value: k.highActive, hint: "needs eyes-on", cls: "red" },
+      { label: "Lanes affected", value: k.lanes, hint: "sum across active", cls: "amber" },
+      { label: "Worst delay", value: `${k.worstDelay}m`, hint: "max est. delay (active)", cls: "purple" },
+      { label: "Last 60 min", value: k.last60, hint: "new incidents", cls: "teal" },
+      { label: "Last 30 min", value: k.last30, hint: "newest activity", cls: "green" },
+    ];
+    document.getElementById("kpi-grid").innerHTML = cards.map(c => `
+      <div class="card ${c.cls}">
+        <span class="label">${c.label}</span>
+        <span class="value">${c.value}</span>
+        <span class="hint">${c.hint}</span>
+      </div>`).join("");
+  }
+
+  const WINDOWS = [
+    { mins: 30, label: "Last 30 min" },
+    { mins: 60, label: "Last hour" },
+    { mins: 120, label: "Last 2 hours" },
+    { mins: Infinity, label: "All snapshot" },
+  ];
+  let activeWindowMins = 60; // default per plan
+
+  function renderChips() {
+    const el = document.getElementById("window-chips");
+    el.innerHTML = WINDOWS.map(w => `
+      <button type="button" class="chip" data-mins="${w.mins}"
+              aria-pressed="${w.mins === activeWindowMins}">${w.label}</button>
+    `).join("");
+    el.querySelectorAll(".chip").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const m = btn.dataset.mins === "Infinity" ? Infinity : Number(btn.dataset.mins);
+        activeWindowMins = m;
+        renderChips();
+        renderFeed();
+        renderTable();
+      });
+    });
+  }
+
+  function renderFeed() {
+    const nowIso = latestTimestamp(DATA);
+    const records = withinWindow(DATA, nowIso, activeWindowMins);
+    const buckets = bucketize(records);
+    const feedEl = document.getElementById("feed");
+    if (!buckets.length) {
+      feedEl.innerHTML = `<div class="feed-empty">No incidents in this window.</div>`;
+      return;
+    }
+    feedEl.innerHTML = buckets.map(b => `
+      <div class="bucket-head">
+        <strong>${b.label}</strong>
+        <span>${b.items.length} incident${b.items.length === 1 ? "" : "s"}</span>
+      </div>
+      ${b.items.map(r => `
+        <div class="feed-row${r.status === "Resolved" ? " resolved" : ""}">
+          <span class="time">${formatTimeHM(r.timestamp)}</span>
+          <span><span class="badge sev-${r.severity}">${r.severity}</span></span>
+          <span class="type">${r.type}</span>
+          <span><strong class="road">${r.road_name}</strong> &middot; <span style="color:var(--muted)">${r.location}</span></span>
+          <span class="lanes">${r.lanes_affected} lane${r.lanes_affected === 1 ? "" : "s"}</span>
+          <span class="delay">+${r.estimated_delay_min}m</span>
+        </div>
+      `).join("")}
+    `).join("");
+  }
+
+  function renderHeatmap() {
+    const data = severityByHour(DATA);
+    const rows = ["High", "Medium", "Low"];
+    const el = document.getElementById("heatmap");
+    const labelCol = `
+      <div class="col">
+        <div class="hcell label">&nbsp;</div>
+        ${rows.map(r => `<div class="hcell row-label">${r}</div>`).join("")}
+      </div>`;
+    const cols = data.map(h => `
+      <div class="col">
+        <div class="hcell label">${h.label}</div>
+        ${rows.map(r => {
+          const c = h.counts[r];
+          return `<div class="hcell" data-row="${r}" data-count="${c >= 3 ? 3 : c}">${c}</div>`;
+        }).join("")}
+      </div>`).join("");
+    el.innerHTML = labelCol + cols;
+  }
+
+  function renderRoadStrip() {
+    const items = roadImpact(DATA);
+    const el = document.getElementById("road-strip");
+    if (!items.length) { el.innerHTML = `<span class="empty-dot">No active incidents.</span>`; return; }
+    el.innerHTML = items.map(it => `
+      <span class="road-chip">
+        <span class="road-name">${it.road}</span>
+        <span style="color:var(--muted)">${it.count} active</span>
+        <span class="dots" aria-label="${it.dots.join(', ')}">
+          ${it.dots.map(d => `<span class="dot ${d}" title="${d}"></span>`).join("")}
+        </span>
+      </span>`).join("");
+  }
+
+  // ── Table (sortable + window-filtered) ─────────────────────────────────────
+  const COLUMNS = [
+    { key: "incident_id",        label: "ID",       cls: "id" },
+    { key: "timestamp",          label: "Time" },
+    { key: "road_name",          label: "Road" },
+    { key: "location",           label: "Location" },
+    { key: "type",               label: "Type" },
+    { key: "severity",           label: "Severity" },
+    { key: "status",             label: "Status" },
+    { key: "lanes_affected",     label: "Lanes" },
+    { key: "estimated_delay_min",label: "Delay (m)" },
+  ];
+  let sortKey = "timestamp";
+  let sortDir = -1; // newest first
+
+  function renderTableHead() {
+    const el = document.getElementById("table-head");
+    el.innerHTML = COLUMNS.map(c => `
+      <th tabindex="0" data-key="${c.key}">
+        ${c.label}<span class="sort-ind">${sortKey === c.key ? (sortDir === 1 ? "▲" : "▼") : ""}</span>
+      </th>`).join("");
+    el.querySelectorAll("th").forEach(th => {
+      const handler = () => {
+        const k = th.dataset.key;
+        if (sortKey === k) sortDir = -sortDir;
+        else { sortKey = k; sortDir = 1; }
+        renderTableHead();
+        renderTable();
+      };
+      th.addEventListener("click", handler);
+      th.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handler(); } });
+    });
+  }
+
+  function renderTable() {
+    const nowIso = latestTimestamp(DATA);
+    const records = withinWindow(DATA, nowIso, activeWindowMins)
+      .slice()
+      .sort((a, b) => {
+        const va = a[sortKey], vb = b[sortKey];
+        if (va < vb) return -1 * sortDir;
+        if (va > vb) return  1 * sortDir;
+        return 0;
+      });
+    const tbody = document.getElementById("incident-tbody");
+    const empty = document.getElementById("empty-state");
+    if (!records.length) {
+      tbody.innerHTML = "";
+      empty.style.display = "block";
+      return;
+    }
+    empty.style.display = "none";
+    tbody.innerHTML = records.map(r => `
+      <tr class="${r.status === "Resolved" ? "resolved" : ""}">
+        <td class="id">${r.incident_id}</td>
+        <td>${formatTimeHM(r.timestamp)}</td>
+        <td><strong>${r.road_name}</strong></td>
+        <td>${r.location}</td>
+        <td>${r.type}</td>
+        <td><span class="badge sev-${r.severity}">${r.severity}</span></td>
+        <td><span class="badge status-${r.status}">${r.status}</span></td>
+        <td>${r.lanes_affected}</td>
+        <td>${r.estimated_delay_min}</td>
+      </tr>`).join("");
+  }
+
+  // ── Init ────────────────────────────────────────────────────────────────────
+  const NOW_ISO = latestTimestamp(DATA);
+  renderHeader(NOW_ISO);
+  renderKpis(NOW_ISO);
+  renderChips();
+  renderFeed();
+  renderHeatmap();
+  renderRoadStrip();
+  renderTableHead();
+  renderTable();
+
+  // ── Built-in tests ─────────────────────────────────────────────────────────
+  function runTests() {
+    const results = [];
+    let passed = 0, failed = 0;
+    function assert(desc, cond) {
+      if (cond) { results.push({ pass: true,  msg: `PASS  ${desc}` }); passed++; }
+      else      { results.push({ pass: false, msg: `FAIL  ${desc}` }); failed++; }
+    }
+
+    // dataset
+    assert("dataset has 30 records", DATA.length === 30);
+
+    // KPI anchor
+    const now = latestTimestamp(DATA);
+    assert("'now' is the max timestamp (INC-030)", now === "2026-05-31T11:31:00+08:00");
+    const k = computeKpis(DATA, now);
+    assert("active count = 23", k.active === 23);
+    assert("high-severity active count = 10", k.highActive === 10);
+    assert("lanes affected (active sum) = 31", k.lanes === 31);
+    assert("worst delay (active) = 36", k.worstDelay === 36);
+    assert("incidents in last 60 min = 8", k.last60 === 8);
+    assert("incidents in last 30 min = 4", k.last30 === 4);
+
+    // window filtering
+    const w60 = withinWindow(DATA, now, 60);
+    assert("withinWindow(60) length = 8", w60.length === 8);
+    const wAll = withinWindow(DATA, now, Infinity);
+    assert("withinWindow(All) length = 30", wAll.length === 30);
+
+    // bucketize newest-first
+    const b = bucketize(withinWindow(DATA, now, Infinity));
+    assert("bucketize produces >= 1 bucket", b.length >= 1);
+    assert("first bucket is newest (contains INC-030)",
+      b[0].items.some(r => r.incident_id === "INC-030"));
+
+    // road impact
+    const ri = roadImpact(DATA);
+    assert("road impact list non-empty", ri.length > 0);
+    assert("top road has the highest active count",
+      ri.every(r => r.count <= ri[0].count));
+
+    // severity heatmap
+    const hm = severityByHour(DATA);
+    assert("heatmap covers 5 hours (07..11)", hm.length === 5);
+
+    return { results, passed, failed };
+  }
+
+  document.getElementById("test-toggle").addEventListener("click", () => {
+    const out = document.getElementById("test-output");
+    if (out.style.display === "block") { out.style.display = "none"; return; }
+    const { results, passed, failed } = runTests();
+    out.innerHTML = results.map(r =>
+      `<span class="${r.pass ? "pass" : "fail"}">${r.msg}</span>`
+    ).join("\n") + `\n<span class="summary">── ${passed} passed, ${failed} failed ──</span>`;
+    out.style.display = "block";
+  });
+</script>
+</body>
+</html>

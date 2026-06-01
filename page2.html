@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TrafficPulse — Road Network Overview</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --panel-2: #1f2733;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #2dd4bf;
+    --sev-high: #f87171;
+    --sev-med:  #fbbf24;
+    --sev-low:  #34d399;
+    --active:   #fb923c;
+    --resolved: #9ca3af;
+    --shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 0 0 1px var(--border);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px; line-height: 1.5;
+  }
+  a { color: var(--accent); }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 24px; }
+
+  /* Header */
+  header.top {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 24px;
+  }
+  header.top h1 { margin: 0; font-size: 22px; letter-spacing: 0.2px; font-weight: 600; }
+  header.top h1 .tag {
+    display: inline-block; margin-left: 8px; vertical-align: middle;
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+    background: var(--panel-2); color: var(--accent); border: 1px solid var(--border);
+  }
+  header.top .meta { color: var(--muted); font-size: 12px; }
+  header.top .meta strong { color: var(--text); font-weight: 600; }
+
+  /* KPI strip */
+  .kpis {
+    display: grid; gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    margin-bottom: 24px;
+  }
+  .kpi {
+    background: var(--panel); border-radius: 10px; padding: 16px 18px;
+    box-shadow: var(--shadow);
+  }
+  .kpi .label {
+    color: var(--muted); font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.7px; font-weight: 600;
+  }
+  .kpi .value {
+    font-size: 28px; font-weight: 600; margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi .sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .kpi.alert .value { color: var(--sev-high); }
+  .kpi.warn  .value { color: var(--sev-med); }
+  .kpi.ok    .value { color: var(--sev-low); }
+  .kpi.lead  .value { color: var(--accent); }
+
+  /* Section heading */
+  .section-h {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px; margin: 8px 0 12px;
+  }
+  .section-h h2 {
+    margin: 0; font-size: 12px; text-transform: uppercase;
+    letter-spacing: 0.6px; color: var(--muted); font-weight: 600;
+  }
+  .section-h .hint { color: var(--muted); font-size: 12px; }
+
+  /* Road-card grid */
+  .road-grid {
+    display: grid; gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    margin-bottom: 24px;
+  }
+  .road-card {
+    background: var(--panel); border-radius: 10px; padding: 14px 16px;
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .road-card .road-head {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+  }
+  .road-card .road-name { font-size: 16px; font-weight: 600; }
+  .road-card .road-delay {
+    font-size: 13px; color: var(--sev-high);
+    font-variant-numeric: tabular-nums; font-weight: 600;
+  }
+  .road-card .road-meta { color: var(--muted); font-size: 12px; }
+  .road-card .road-counts {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .road-card .heat {
+    display: flex; height: 6px; border-radius: 3px; overflow: hidden;
+    background: var(--panel-2);
+  }
+  .road-card .heat span { display: block; }
+  .road-card .heat .h-high { background: var(--sev-high); }
+  .road-card .heat .h-med  { background: var(--sev-med); }
+  .road-card .heat .h-low  { background: var(--sev-low); }
+  .road-card .heat .h-res  { background: var(--resolved); opacity: 0.5; }
+  .road-card.calm .road-delay { color: var(--sev-low); }
+
+  /* Pills */
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 600;
+  }
+  .pill.high     { background: rgba(248,113,113,0.16); color: #fca5a5; }
+  .pill.med      { background: rgba(251,191,36,0.16);  color: #fcd34d; }
+  .pill.low      { background: rgba(52,211,153,0.16);  color: #6ee7b7; }
+  .pill.active   { background: rgba(251,146,60,0.18);  color: #fdba74; }
+  .pill.resolved { background: rgba(156,163,175,0.18); color: #d1d5db; }
+  .pill .dot {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* Hotspot table */
+  .panel {
+    background: var(--panel); border-radius: 10px; padding: 16px;
+    box-shadow: var(--shadow); margin-bottom: 20px;
+  }
+  table.hotspot { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.hotspot th, table.hotspot td {
+    text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  table.hotspot tr:last-child td { border-bottom: 0; }
+  table.hotspot th {
+    color: var(--muted); font-weight: 600; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  table.hotspot td.num {
+    text-align: right; font-variant-numeric: tabular-nums;
+  }
+  table.hotspot td.rank {
+    color: var(--muted); font-weight: 600; width: 36px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Legend + Assumptions footer */
+  .legend {
+    display: flex; gap: 14px; flex-wrap: wrap; align-items: center;
+    color: var(--muted); font-size: 12px; margin-bottom: 8px;
+  }
+  .legend .swatch {
+    display: inline-block; width: 10px; height: 10px; border-radius: 2px;
+    margin-right: 6px; vertical-align: middle;
+  }
+  .assumptions {
+    background: var(--panel); border-radius: 10px; padding: 16px 18px;
+    box-shadow: var(--shadow); color: var(--muted); font-size: 13px;
+  }
+  .assumptions h2 {
+    margin: 0 0 8px; font-size: 12px; text-transform: uppercase;
+    letter-spacing: 0.6px; color: var(--muted); font-weight: 600;
+  }
+  .assumptions ul { margin: 0; padding-left: 18px; }
+  .assumptions li { margin: 4px 0; }
+  .assumptions strong { color: var(--text); }
+
+  /* Accessibility / state */
+  :focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px;
+  }
+  .empty {
+    color: var(--muted); font-style: italic; padding: 24px 0; text-align: center;
+  }
+  .error {
+    color: #fca5a5; background: rgba(248,113,113,0.08);
+    border: 1px solid rgba(248,113,113,0.25); border-radius: 8px;
+    padding: 12px 14px; margin-bottom: 16px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .road-card, .kpi { transition: transform 0.12s ease; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>
+      Road Network Overview
+      <span class="tag" aria-label="Demo data">demo</span>
+    </h1>
+    <div class="meta">
+      Data as of <strong id="snapshot-ts">—</strong> ·
+      <strong id="snapshot-count">—</strong> incidents
+    </div>
+  </header>
+
+  <div id="error-banner" class="error" hidden role="alert"></div>
+
+  <section aria-label="Network KPIs" class="kpis" id="kpis">
+    <div class="kpi alert"><div class="label">Roads w/ Active Incidents</div>
+      <div class="value" id="kpi-roads-active">—</div>
+      <div class="sub">of <span id="kpi-roads-total">—</span> total roads</div></div>
+    <div class="kpi warn"><div class="label">Active Incidents</div>
+      <div class="value" id="kpi-active">—</div>
+      <div class="sub"><span id="kpi-resolved">—</span> resolved in window</div></div>
+    <div class="kpi alert"><div class="label">Total Active Delay</div>
+      <div class="value" id="kpi-delay">—</div>
+      <div class="sub">minutes across the network</div></div>
+    <div class="kpi lead"><div class="label">Top Hotspot</div>
+      <div class="value" id="kpi-hotspot">—</div>
+      <div class="sub" id="kpi-hotspot-sub">—</div></div>
+  </section>
+
+  <div class="section-h">
+    <h2>Roads — sorted by active delay (worst first)</h2>
+    <div class="hint">Cards show active vs resolved counts, severity mix, and delay total.</div>
+  </div>
+  <section aria-label="Roads grid" class="road-grid" id="road-grid"></section>
+
+  <div class="section-h">
+    <h2>Top hotspots — for operations focus</h2>
+    <div class="hint">Worst roads by total active delay, with the highest-delay incident location.</div>
+  </div>
+  <div class="panel">
+    <div class="legend" aria-hidden="true">
+      <span><span class="swatch" style="background:var(--sev-high)"></span>High</span>
+      <span><span class="swatch" style="background:var(--sev-med)"></span>Medium</span>
+      <span><span class="swatch" style="background:var(--sev-low)"></span>Low</span>
+      <span><span class="swatch" style="background:var(--active)"></span>Active</span>
+      <span><span class="swatch" style="background:var(--resolved);opacity:0.6"></span>Resolved</span>
+    </div>
+    <table class="hotspot" id="hotspot-table" aria-label="Top hotspot roads">
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Road</th>
+          <th scope="col">Active</th>
+          <th scope="col">Worst severity</th>
+          <th scope="col">Worst location</th>
+          <th scope="col" class="num">Lanes hit</th>
+          <th scope="col" class="num">Total delay (min)</th>
+        </tr>
+      </thead>
+      <tbody id="hotspot-body"></tbody>
+    </table>
+  </div>
+
+  <section class="assumptions" aria-label="Demo assumptions">
+    <h2>Assumptions &amp; notes</h2>
+    <ul>
+      <li><strong>Data source.</strong> <code>data/traffic_incidents.json</code> — dummy
+          dataset bundled with the repo. <strong>Not real LTA production data.</strong></li>
+      <li><strong>Time horizon.</strong> All 30 incidents are within a ~4-hour window on
+          <span id="window-date">2026-05-31</span>; the page treats the full set as
+          "recent" without a sliding window.</li>
+      <li><strong>"Active delay" totals</strong> sum <code>estimated_delay_min</code>
+          across <em>Active</em> incidents per road; resolved incidents are counted but
+          excluded from delay totals.</li>
+      <li><strong>"Hotspot" definition.</strong> Roads ranked by total active delay
+          (minutes), descending. Tie-break: more active incidents wins.</li>
+      <li><strong>Static page.</strong> No external APIs, no production data, no build
+          step. The page tries to <code>fetch()</code> the data file; if blocked by
+          <code>file://</code> origin policy, it falls back to inline JSON below.</li>
+      <li><strong>Sibling page.</strong> <code>page1.html</code> (separate ticket)
+          shows the incident-level table; this page (<code>page2.html</code>) is the
+          road-network rollup view.</li>
+    </ul>
+  </section>
+
+</div>
+
+<!-- Inline fallback so the page works when opened via file:// (fetch is blocked
+     by browsers on local origins). The fetch() path is still tried first so an
+     updated JSON on disk wins when served over http://. -->
+<script type="application/json" id="incidents-fallback">
+[
+  {"incident_id":"INC-001","timestamp":"2026-05-31T07:45:00+08:00","road_name":"PIE","location":"PIE near Toa Payoh","type":"Accident","severity":"High","status":"Active","lanes_affected":2,"estimated_delay_min":28},
+  {"incident_id":"INC-002","timestamp":"2026-05-31T07:52:00+08:00","road_name":"CTE","location":"CTE before Braddell Road","type":"Congestion","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":14},
+  {"incident_id":"INC-003","timestamp":"2026-05-31T08:03:00+08:00","road_name":"AYE","location":"AYE near Clementi Ave 2","type":"Roadwork","severity":"Low","status":"Active","lanes_affected":1,"estimated_delay_min":6},
+  {"incident_id":"INC-004","timestamp":"2026-05-31T08:12:00+08:00","road_name":"BKE","location":"BKE towards Woodlands","type":"Breakdown","severity":"Medium","status":"Resolved","lanes_affected":1,"estimated_delay_min":10},
+  {"incident_id":"INC-005","timestamp":"2026-05-31T08:18:00+08:00","road_name":"ECP","location":"ECP near Fort Road","type":"Accident","severity":"High","status":"Active","lanes_affected":2,"estimated_delay_min":32},
+  {"incident_id":"INC-006","timestamp":"2026-05-31T08:26:00+08:00","road_name":"SLE","location":"SLE after Mandai Road","type":"Congestion","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":18},
+  {"incident_id":"INC-007","timestamp":"2026-05-31T08:37:00+08:00","road_name":"KPE","location":"KPE tunnel towards ECP","type":"Breakdown","severity":"High","status":"Active","lanes_affected":1,"estimated_delay_min":25},
+  {"incident_id":"INC-008","timestamp":"2026-05-31T08:44:00+08:00","road_name":"MCE","location":"MCE before Central Boulevard","type":"Congestion","severity":"Low","status":"Resolved","lanes_affected":0,"estimated_delay_min":4},
+  {"incident_id":"INC-009","timestamp":"2026-05-31T08:55:00+08:00","road_name":"TPE","location":"TPE near Punggol Road","type":"Roadwork","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":12},
+  {"incident_id":"INC-010","timestamp":"2026-05-31T09:02:00+08:00","road_name":"PIE","location":"PIE before Stevens Road","type":"Congestion","severity":"High","status":"Active","lanes_affected":2,"estimated_delay_min":35},
+  {"incident_id":"INC-011","timestamp":"2026-05-31T09:10:00+08:00","road_name":"CTE","location":"CTE near Ang Mo Kio Ave 1","type":"Accident","severity":"High","status":"Active","lanes_affected":2,"estimated_delay_min":30},
+  {"incident_id":"INC-012","timestamp":"2026-05-31T09:16:00+08:00","road_name":"AYE","location":"AYE towards City before Alexandra","type":"Congestion","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":16},
+  {"incident_id":"INC-013","timestamp":"2026-05-31T09:21:00+08:00","road_name":"ECP","location":"ECP near Marine Parade","type":"Breakdown","severity":"Low","status":"Resolved","lanes_affected":0,"estimated_delay_min":5},
+  {"incident_id":"INC-014","timestamp":"2026-05-31T09:30:00+08:00","road_name":"BKE","location":"BKE before PIE exit","type":"Congestion","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":17},
+  {"incident_id":"INC-015","timestamp":"2026-05-31T09:38:00+08:00","road_name":"Lornie Road","location":"Lornie Road towards Adam Road","type":"Roadwork","severity":"Low","status":"Active","lanes_affected":1,"estimated_delay_min":7},
+  {"incident_id":"INC-016","timestamp":"2026-05-31T09:45:00+08:00","road_name":"PIE","location":"PIE near Jurong Town Hall","type":"Accident","severity":"Medium","status":"Resolved","lanes_affected":1,"estimated_delay_min":13},
+  {"incident_id":"INC-017","timestamp":"2026-05-31T09:53:00+08:00","road_name":"CTE","location":"CTE tunnel towards city","type":"Congestion","severity":"High","status":"Active","lanes_affected":2,"estimated_delay_min":36},
+  {"incident_id":"INC-018","timestamp":"2026-05-31T10:01:00+08:00","road_name":"SLE","location":"SLE near Woodlands Ave 2","type":"Breakdown","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":15},
+  {"incident_id":"INC-019","timestamp":"2026-05-31T10:09:00+08:00","road_name":"TPE","location":"TPE towards PIE","type":"Accident","severity":"High","status":"Active","lanes_affected":2,"estimated_delay_min":33},
+  {"incident_id":"INC-020","timestamp":"2026-05-31T10:15:00+08:00","road_name":"KJE","location":"KJE near Choa Chu Kang","type":"Congestion","severity":"Low","status":"Resolved","lanes_affected":0,"estimated_delay_min":4},
+  {"incident_id":"INC-021","timestamp":"2026-05-31T10:22:00+08:00","road_name":"MCE","location":"MCE towards AYE","type":"Congestion","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":19},
+  {"incident_id":"INC-022","timestamp":"2026-05-31T10:30:00+08:00","road_name":"Nicoll Highway","location":"Nicoll Highway near Stadium","type":"Roadwork","severity":"Low","status":"Active","lanes_affected":1,"estimated_delay_min":8},
+  {"incident_id":"INC-023","timestamp":"2026-05-31T10:37:00+08:00","road_name":"ECP","location":"ECP towards Changi Airport","type":"Congestion","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":20},
+  {"incident_id":"INC-024","timestamp":"2026-05-31T10:45:00+08:00","road_name":"AYE","location":"AYE near Buona Vista","type":"Breakdown","severity":"High","status":"Active","lanes_affected":1,"estimated_delay_min":24},
+  {"incident_id":"INC-025","timestamp":"2026-05-31T10:52:00+08:00","road_name":"PIE","location":"PIE towards Changi after Eunos","type":"Congestion","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":18},
+  {"incident_id":"INC-026","timestamp":"2026-05-31T11:00:00+08:00","road_name":"CTE","location":"CTE near Havelock Road","type":"Roadwork","severity":"Low","status":"Resolved","lanes_affected":0,"estimated_delay_min":3},
+  {"incident_id":"INC-027","timestamp":"2026-05-31T11:08:00+08:00","road_name":"BKE","location":"BKE towards PIE before Dairy Farm","type":"Accident","severity":"High","status":"Active","lanes_affected":2,"estimated_delay_min":31},
+  {"incident_id":"INC-028","timestamp":"2026-05-31T11:15:00+08:00","road_name":"KPE","location":"KPE near Tampines Road","type":"Congestion","severity":"Medium","status":"Active","lanes_affected":1,"estimated_delay_min":16},
+  {"incident_id":"INC-029","timestamp":"2026-05-31T11:23:00+08:00","road_name":"TPE","location":"TPE near Loyang Ave","type":"Breakdown","severity":"Low","status":"Resolved","lanes_affected":0,"estimated_delay_min":5},
+  {"incident_id":"INC-030","timestamp":"2026-05-31T11:31:00+08:00","road_name":"PIE","location":"PIE near Bedok North","type":"Accident","severity":"High","status":"Active","lanes_affected":2,"estimated_delay_min":34}
+]
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  const SEV_RANK = { High: 3, Medium: 2, Low: 1 };
+  const SEV_CLASS = { High: "high", Medium: "med", Low: "low" };
+
+  function readFallback() {
+    const el = document.getElementById("incidents-fallback");
+    if (!el) return [];
+    try { return JSON.parse(el.textContent); }
+    catch (e) { console.error("inline fallback parse failed:", e); return []; }
+  }
+
+  async function loadIncidents() {
+    try {
+      const res = await fetch("data/traffic_incidents.json", { cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      if (!Array.isArray(data)) throw new Error("expected array");
+      return { data, source: "fetch" };
+    } catch (err) {
+      // file:// or fetch blocked → use inline fallback
+      return { data: readFallback(), source: "inline" };
+    }
+  }
+
+  function aggregateByRoad(incidents) {
+    const map = new Map();
+    for (const inc of incidents) {
+      if (!map.has(inc.road_name)) {
+        map.set(inc.road_name, {
+          road: inc.road_name,
+          active: 0,
+          resolved: 0,
+          totalActiveDelay: 0,
+          lanesActive: 0,
+          worstSeverity: null,
+          worstSeverityRank: 0,
+          worstIncident: null,
+          breakdown: { High: 0, Medium: 0, Low: 0, Resolved: 0 },
+        });
+      }
+      const r = map.get(inc.road_name);
+      if (inc.status === "Active") {
+        r.active += 1;
+        r.totalActiveDelay += inc.estimated_delay_min;
+        r.lanesActive += inc.lanes_affected;
+        const rank = SEV_RANK[inc.severity] || 0;
+        if (rank > r.worstSeverityRank) {
+          r.worstSeverityRank = rank;
+          r.worstSeverity = inc.severity;
+        }
+        if (!r.worstIncident || inc.estimated_delay_min > r.worstIncident.estimated_delay_min) {
+          r.worstIncident = inc;
+        }
+        r.breakdown[inc.severity] = (r.breakdown[inc.severity] || 0) + 1;
+      } else {
+        r.resolved += 1;
+        r.breakdown.Resolved += 1;
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => {
+      if (b.totalActiveDelay !== a.totalActiveDelay) {
+        return b.totalActiveDelay - a.totalActiveDelay;
+      }
+      return b.active - a.active;
+    });
+  }
+
+  function pillFor(severity) {
+    const cls = SEV_CLASS[severity] || "low";
+    return `<span class="pill ${cls}"><span class="dot"></span>${severity}</span>`;
+  }
+
+  function fmtTimestamp(iso) {
+    if (!iso) return "—";
+    return iso.replace("T", " ").replace(/\+\d{2}:\d{2}$/, " SGT");
+  }
+
+  function renderKpis(roads, incidents, snapshotTs) {
+    const roadsTotal = roads.length;
+    const roadsActive = roads.filter(r => r.active > 0).length;
+    const active = incidents.filter(i => i.status === "Active").length;
+    const resolved = incidents.length - active;
+    const totalDelay = roads.reduce((s, r) => s + r.totalActiveDelay, 0);
+    const hotspot = roads[0] || null;
+
+    document.getElementById("kpi-roads-active").textContent = roadsActive;
+    document.getElementById("kpi-roads-total").textContent = roadsTotal;
+    document.getElementById("kpi-active").textContent = active;
+    document.getElementById("kpi-resolved").textContent = resolved;
+    document.getElementById("kpi-delay").textContent = totalDelay;
+    if (hotspot && hotspot.active > 0) {
+      document.getElementById("kpi-hotspot").textContent = hotspot.road;
+      document.getElementById("kpi-hotspot-sub").textContent =
+        hotspot.totalActiveDelay + " min · " + hotspot.active + " active";
+    } else {
+      document.getElementById("kpi-hotspot").textContent = "—";
+      document.getElementById("kpi-hotspot-sub").textContent = "Network calm";
+    }
+    document.getElementById("snapshot-ts").textContent = fmtTimestamp(snapshotTs);
+    document.getElementById("snapshot-count").textContent = incidents.length;
+  }
+
+  function renderRoads(roads) {
+    const grid = document.getElementById("road-grid");
+    grid.innerHTML = "";
+    if (roads.length === 0) {
+      const div = document.createElement("div");
+      div.className = "empty";
+      div.textContent = "No road data available.";
+      grid.appendChild(div);
+      return;
+    }
+    const maxDelay = Math.max(...roads.map(r => r.totalActiveDelay), 1);
+
+    for (const r of roads) {
+      const card = document.createElement("article");
+      card.className = "road-card" + (r.active === 0 ? " calm" : "");
+      const total = (r.breakdown.High || 0) + (r.breakdown.Medium || 0)
+                  + (r.breakdown.Low || 0) + (r.breakdown.Resolved || 0);
+
+      const heatSegments = [
+        ["h-high", r.breakdown.High],
+        ["h-med",  r.breakdown.Medium],
+        ["h-low",  r.breakdown.Low],
+        ["h-res",  r.breakdown.Resolved],
+      ].filter(([_, n]) => n > 0)
+       .map(([cls, n]) => `<span class="${cls}" style="width:${(n / total) * 100}%"></span>`)
+       .join("");
+
+      const pills = [];
+      if (r.active > 0)   pills.push(`<span class="pill active"><span class="dot"></span>${r.active} active</span>`);
+      if (r.resolved > 0) pills.push(`<span class="pill resolved"><span class="dot"></span>${r.resolved} resolved</span>`);
+      if (r.worstSeverity) pills.push(pillFor(r.worstSeverity));
+
+      card.innerHTML = `
+        <div class="road-head">
+          <span class="road-name">${r.road}</span>
+          <span class="road-delay" aria-label="Total active delay">
+            ${r.active > 0 ? r.totalActiveDelay + " min" : "clear"}
+          </span>
+        </div>
+        <div class="heat" aria-hidden="true">${heatSegments}</div>
+        <div class="road-counts">${pills.join("")}</div>
+        <div class="road-meta">
+          ${r.active > 0
+            ? r.lanesActive + " lane" + (r.lanesActive === 1 ? "" : "s")
+              + " affected · worst: " + (r.worstIncident ? r.worstIncident.location : "—")
+            : "No active incidents — last cleared recently"}
+        </div>
+      `;
+      grid.appendChild(card);
+    }
+  }
+
+  function renderHotspots(roads, topN) {
+    const body = document.getElementById("hotspot-body");
+    body.innerHTML = "";
+    const active = roads.filter(r => r.active > 0).slice(0, topN);
+    if (active.length === 0) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="7" class="empty">No active hotspots in window — network calm.</td>`;
+      body.appendChild(tr);
+      return;
+    }
+    active.forEach((r, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="rank">${i + 1}</td>
+        <td><strong>${r.road}</strong></td>
+        <td>${r.active}</td>
+        <td>${r.worstSeverity ? pillFor(r.worstSeverity) : "—"}</td>
+        <td>${r.worstIncident ? r.worstIncident.location : "—"}</td>
+        <td class="num">${r.lanesActive}</td>
+        <td class="num">${r.totalActiveDelay}</td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+
+  function showError(msg) {
+    const el = document.getElementById("error-banner");
+    el.textContent = msg;
+    el.hidden = false;
+  }
+
+  async function init() {
+    const { data: incidents, source } = await loadIncidents();
+    if (!Array.isArray(incidents) || incidents.length === 0) {
+      showError("Could not load incidents — neither fetch nor inline fallback returned data.");
+      return;
+    }
+    if (source === "inline") {
+      console.info("page2.html: fetch unavailable, using inline fallback data.");
+    }
+    const latestTs = incidents.reduce(
+      (m, i) => (i.timestamp > m ? i.timestamp : m), incidents[0].timestamp
+    );
+    const roads = aggregateByRoad(incidents);
+    renderKpis(roads, incidents, latestTs);
+    renderRoads(roads);
+    renderHotspots(roads, 8);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>

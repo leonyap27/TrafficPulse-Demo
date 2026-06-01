@@ -128,6 +128,13 @@ Add one line to the chat report:
 - One logical change per commit.
 - Prefer editing existing files over adding new ones.
 - Follow the approved plan's "Order of changes." If you discover the plan was wrong, **stop and surface it** — don't quietly diverge.
+- **Dashboard UI/UX delegation.** If the planned changes touch dashboard surfaces (`index*.html`, `page*.html`, dashboard React components, zone pages, or any layout / interaction / data-vis / a11y concern), delegate the UI work to the [`dashboard-ui-ux`](../agents/dashboard-ui-ux.md) subagent via the `Agent` tool (`subagent_type: "dashboard-ui-ux"`). Hand it the ticket key + the relevant plan section; expect a structured hand-back (files edited, browser verification notes, things it could not verify). Fold that hand-back into the PR body's testing-evidence section verbatim. Backend / data / non-UI changes stay in this skill.
+- **Subagent telemetry (MANDATORY when delegating).** The `Agent` tool does not fire `record_usage.py` on its own — the parent skill must bracket the delegation so the dashboard's usage timeline shows the subagent's activity, not just `/jira-impl`. Immediately **before** invoking the `Agent` tool:
+  ```bash
+  python scripts/record_usage.py --command dashboard-ui-ux --asset-type agent \
+    --asset-path .claude/agents/dashboard-ui-ux.md --trigger bridge --outcome started
+  ```
+  Immediately **after** the `Agent` tool returns (success, partial, or refusal), record the matching terminal event with the subagent's self-reported outcome (`completed` on a clean structured hand-back; `partial` if it flagged "could not verify" items; `blocked` if it refused; `failed` on tool error). Use the same `--command dashboard-ui-ux --asset-type agent --asset-path .claude/agents/dashboard-ui-ux.md --trigger bridge` envelope. Skipping the terminal event leaves a dangling `started` that surfaces as "abandoned" in the validator.
 
 ## 4. Pre-PR smoke check (fail-fast only)
 
