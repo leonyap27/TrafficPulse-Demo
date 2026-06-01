@@ -1,47 +1,332 @@
 [
   {
     "incident_id": "INC-001",
-    "timestamp": "2026-05-31T08:10:00+08:00",
+    "timestamp": "2026-05-31T07:45:00+08:00",
     "road_name": "PIE",
     "location": "PIE near Toa Payoh",
     "type": "Accident",
     "severity": "High",
-    "status": "Active"
+    "status": "Active",
+    "lanes_affected": 2,
+    "estimated_delay_min": 28
   },
   {
     "incident_id": "INC-002",
-    "timestamp": "2026-05-31T08:25:00+08:00",
+    "timestamp": "2026-05-31T07:52:00+08:00",
     "road_name": "CTE",
     "location": "CTE before Braddell Road",
     "type": "Congestion",
     "severity": "Medium",
-    "status": "Active"
+    "status": "Active",
+    "lanes_affected": 1,
+    "estimated_delay_min": 14
   },
   {
     "incident_id": "INC-003",
-    "timestamp": "2026-05-31T08:40:00+08:00",
+    "timestamp": "2026-05-31T08:03:00+08:00",
     "road_name": "AYE",
     "location": "AYE near Clementi Ave 2",
     "type": "Roadwork",
     "severity": "Low",
-    "status": "Active"
+    "status": "Active",
+    "lanes_affected": 1,
+    "estimated_delay_min": 6
   },
   {
     "incident_id": "INC-004",
-    "timestamp": "2026-05-31T09:05:00+08:00",
+    "timestamp": "2026-05-31T08:12:00+08:00",
     "road_name": "BKE",
     "location": "BKE towards Woodlands",
     "type": "Breakdown",
     "severity": "Medium",
-    "status": "Resolved"
+    "status": "Resolved",
+    "lanes_affected": 1,
+    "estimated_delay_min": 10
   },
   {
     "incident_id": "INC-005",
-    "timestamp": "2026-05-31T09:20:00+08:00",
+    "timestamp": "2026-05-31T08:18:00+08:00",
     "road_name": "ECP",
     "location": "ECP near Fort Road",
     "type": "Accident",
     "severity": "High",
-    "status": "Active"
+    "status": "Active",
+    "lanes_affected": 2,
+    "estimated_delay_min": 32
+  },
+  {
+    "incident_id": "INC-006",
+    "timestamp": "2026-05-31T08:26:00+08:00",
+    "road_name": "SLE",
+    "location": "SLE after Mandai Road",
+    "type": "Congestion",
+    "severity": "Medium",
+    "status": "Active",
+    "lanes_affected": 1,
+    "estimated_delay_min": 18
+  },
+  {
+    "incident_id": "INC-007",
+    "timestamp": "2026-05-31T08:37:00+08:00",
+    "road_name": "KPE",
+    "location": "KPE tunnel towards ECP",
+    "type": "Breakdown",
+    "severity": "High",
+    "status": "Active",
+    "lanes_affected": 1,
+    "estimated_delay_min": 25
+  },
+  {
+    "incident_id": "INC-008",
+    "timestamp": "2026-05-31T08:44:00+08:00",
+    "road_name": "MCE",
+    "location": "MCE before Central Boulevard",
+    "type": "Congestion",
+    "severity": "Low",
+    "status": "Resolved",
+    "lanes_affected": 0,
+    "estimated_delay_min": 4
+  },
+  {
+    "incident_id": "INC-009",
+    "timestamp": "2026-05-31T08:55:00+08:00",
+    "road_name": "TPE",
+    "location": "TPE near Punggol Road",
+    "type": "Roadwork",
+    "severity": "Medium",
+    "status": "Active",
+    "lanes_affected": 1,
+    "estimated_delay_min": 12
+  },
+  {
+    "incident_id": "INC-010",
+    "timestamp": "2026-05-31T09:02:00+08:00",
+    "road_name": "PIE",
+    "location": "PIE before Stevens Road",
+    "type": "Congestion",
+    "severity": "High",
+    "status": "Active",
+    "lanes_affected": 2,
+    "estimated_delay_min": 35
+  },
+  {
+    "incident_id": "INC-011",
+    "timestamp": "2026-05-31T09:10:00+08:00",
+    "road_name": "CTE",
+    "location": "CTE near Ang Mo Kio Ave 1",
+    "type": "Accident",
+    "severity": "High",
+    "status": "Active",
+    "lanes_affected": 2,
+    "estimated_delay_min": 30
+  },
+  {
+    "incident_id": "INC-012",
+    "timestamp": "2026-05-31T09:16:00+08:00",
+    "road_name": "AYE",
+    "location": "AYE towards City before Alexandra",
+    "type": "Congestion",
+    "severity": "Medium",
+    "status": "Active",
+    "lanes_affected": 1,
+    "estimated_delay_min": 16
+  },
+  {
+    "incident_id": "INC-013",
+    "timestamp": "2026-05-31T09:21:00+08:00",
+    "road_name": "ECP",
+    "location": "ECP near Marine Parade",
+    "type": "Breakdown",
+    "severity": "Low",
+    "status": "Resolved",
+    "lanes_affected": 0,
+    "estimated_delay_min": 5
+  },
+  {
+    "incident_id": "INC-014",
+    "timestamp": "2026-05-31T09:30:00+08:00",
+    "road_name": "BKE",
+    "location": "BKE before PIE exit",
+    "type": "Congestion",
+    "severity": "Medium",
+    "status": "Active",
+    "lanes_affected": 1,
+    "estimated_delay_min": 17
+  },
+  {
+    "incident_id": "INC-015",
+    "timestamp": "2026-05-31T09:38:00+08:00",
+    "road_name": "Lornie Road",
+    "location": "Lornie Road towards Adam Road",
+    "type": "Roadwork",
+    "severity": "Low",
+    "status": "Active",
+    "lanes_affected": 1,
+    "estimated_delay_min": 7
+  },
+  {
+    "incident_id": "INC-016",
+    "timestamp": "2026-05-31T09:45:00+08:00",
+    "road_name": "PIE",
+    "location": "PIE near Jurong Town Hall",
+    "type": "Accident",
+    "severity": "Medium",
+    "status": "Resolved",
+    "lanes_affected": 1,
+    "estimated_delay_min": 13
+  },
+  {
+    "incident_id": "INC-017",
+    "timestamp": "2026-05-31T09:53:00+08:00",
+    "road_name": "CTE",
+    "location": "CTE tunnel towards city",
+    "type": "Congestion",
+    "severity": "High",
+    "status": "Active",
+    "lanes_affected": 2,
+    "estimated_delay_min": 36
+  },
+  {
+    "incident_id": "INC-018",
+    "timestamp": "2026-05-31T10:01:00+08:00",
+    "road_name": "SLE",
+    "location": "SLE near Woodlands Ave 2",
+    "type": "Breakdown",
+    "severity": "Medium",
+    "status": "Active",
+    "lanes_affected": 1,
+    "estimated_delay_min": 15
+  },
+  {
+    "incident_id": "INC-019",
+    "timestamp": "2026-05-31T10:09:00+08:00",
+    "road_name": "TPE",
+    "location": "TPE towards PIE",
+    "type": "Accident",
+    "severity": "High",
+    "status": "Active",
+    "lanes_affected": 2,
+    "estimated_delay_min": 33
+  },
+  {
+    "incident_id": "INC-020",
+    "timestamp": "2026-05-31T10:15:00+08:00",
+    "road_name": "KJE",
+    "location": "KJE near Choa Chu Kang",
+    "type": "Congestion",
+    "severity": "Low",
+    "status": "Resolved",
+    "lanes_affected": 0,
+    "estimated_delay_min": 4
+  },
+  {
+    "incident_id": "INC-021",
+    "timestamp": "2026-05-31T10:22:00+08:00",
+    "road_name": "MCE",
+    "location": "MCE towards AYE",
+    "type": "Congestion",
+    "severity": "Medium",
+    "status": "Active",
+    "lanes_affected": 1,
+    "estimated_delay_min": 19
+  },
+  {
+    "incident_id": "INC-022",
+    "timestamp": "2026-05-31T10:30:00+08:00",
+    "road_name": "Nicoll Highway",
+    "location": "Nicoll Highway near Stadium",
+    "type": "Roadwork",
+    "severity": "Low",
+    "status": "Active",
+    "lanes_affected": 1,
+    "estimated_delay_min": 8
+  },
+  {
+    "incident_id": "INC-023",
+    "timestamp": "2026-05-31T10:37:00+08:00",
+    "road_name": "ECP",
+    "location": "ECP towards Changi Airport",
+    "type": "Congestion",
+    "severity": "Medium",
+    "status": "Active",
+    "lanes_affected": 1,
+    "estimated_delay_min": 20
+  },
+  {
+    "incident_id": "INC-024",
+    "timestamp": "2026-05-31T10:45:00+08:00",
+    "road_name": "AYE",
+    "location": "AYE near Buona Vista",
+    "type": "Breakdown",
+    "severity": "High",
+    "status": "Active",
+    "lanes_affected": 1,
+    "estimated_delay_min": 24
+  },
+  {
+    "incident_id": "INC-025",
+    "timestamp": "2026-05-31T10:52:00+08:00",
+    "road_name": "PIE",
+    "location": "PIE towards Changi after Eunos",
+    "type": "Congestion",
+    "severity": "Medium",
+    "status": "Active",
+    "lanes_affected": 1,
+    "estimated_delay_min": 18
+  },
+  {
+    "incident_id": "INC-026",
+    "timestamp": "2026-05-31T11:00:00+08:00",
+    "road_name": "CTE",
+    "location": "CTE near Havelock Road",
+    "type": "Roadwork",
+    "severity": "Low",
+    "status": "Resolved",
+    "lanes_affected": 0,
+    "estimated_delay_min": 3
+  },
+  {
+    "incident_id": "INC-027",
+    "timestamp": "2026-05-31T11:08:00+08:00",
+    "road_name": "BKE",
+    "location": "BKE towards PIE before Dairy Farm",
+    "type": "Accident",
+    "severity": "High",
+    "status": "Active",
+    "lanes_affected": 2,
+    "estimated_delay_min": 31
+  },
+  {
+    "incident_id": "INC-028",
+    "timestamp": "2026-05-31T11:15:00+08:00",
+    "road_name": "KPE",
+    "location": "KPE near Tampines Road",
+    "type": "Congestion",
+    "severity": "Medium",
+    "status": "Active",
+    "lanes_affected": 1,
+    "estimated_delay_min": 16
+  },
+  {
+    "incident_id": "INC-029",
+    "timestamp": "2026-05-31T11:23:00+08:00",
+    "road_name": "TPE",
+    "location": "TPE near Loyang Ave",
+    "type": "Breakdown",
+    "severity": "Low",
+    "status": "Resolved",
+    "lanes_affected": 0,
+    "estimated_delay_min": 5
+  },
+  {
+    "incident_id": "INC-030",
+    "timestamp": "2026-05-31T11:31:00+08:00",
+    "road_name": "PIE",
+    "location": "PIE near Bedok North",
+    "type": "Accident",
+    "severity": "High",
+    "status": "Active",
+    "lanes_affected": 2,
+    "estimated_delay_min": 34
   }
 ]

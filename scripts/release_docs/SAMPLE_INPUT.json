@@ -1,0 +1,83 @@
+{
+  "tracker_key": "FP-194",
+  "tracker_url": "https://ltads.atlassian.net/browse/FP-194",
+  "jira_base_url": "https://ltads.atlassian.net",
+  "manifest": {
+    "version": "0.4.6",
+    "target_env": "UAT",
+    "target_env_detail": "UAT (Cloud Run: funding-paper-agent)",
+    "release_date": "2026-05-27",
+    "approver": "Leon Ye",
+    "sprint": "Sprint 1 (12 May - 26 May 2026)",
+    "uat_owner": null,
+    "pm": null
+  },
+  "change_summary": [
+    "Adds the Dev-to-UAT release tracker pilot so every sprint release has one place for sign-off and evidence.",
+    "Bakes in the versioning standard with VERSION as the single source of truth."
+  ],
+  "bundle": [
+    {
+      "key": "FP-185",
+      "work_type": "sprint",
+      "summary": "Design Jira Dev-to-UAT change tracker",
+      "components": [],
+      "labels": [],
+      "parent_epic_key": "FP-89",
+      "parent_epic_summary": "Deployment & Operation"
+    },
+    {
+      "key": "FP-156",
+      "work_type": "sprint",
+      "summary": "Sections layout view neatly without scrolling",
+      "components": ["frontend"],
+      "labels": [],
+      "parent_epic_key": null,
+      "parent_epic_summary": null
+    },
+    {
+      "key": "FP-184",
+      "work_type": "tech-debt",
+      "summary": "Strip default compute SA project-role grants",
+      "components": [],
+      "labels": ["security"],
+      "parent_epic_key": "FP-89",
+      "parent_epic_summary": "Deployment & Operation"
+    }
+  ],
+  "pr_references": [
+    {
+      "repo": "leonyap27/Funding_paper_agent",
+      "pr_number": 25,
+      "commit_sha": null,
+      "note": "FP-185 release tracker design"
+    },
+    {
+      "repo": null,
+      "pr_number": null,
+      "commit_sha": "fbf5523",
+      "note": "release base on dev"
+    }
+  ],
+  "readiness": [
+    {"label": "Code freeze on dev", "status": "passed"},
+    {"label": "Every linked Jira item in READY FOR DEPLOY", "status": "pending"},
+    {"label": "UAT smoke test pass", "status": "pending"},
+    {"label": "Approver (Tech Lead) sign-off", "status": "pending"}
+  ],
+  "test_evidence": [
+    {
+      "label": "FP-185 /jira-test evidence",
+      "url": "https://ltads.atlassian.net/browse/FP-185?focusedCommentId=1"
+    }
+  ],
+  "known_issues": [],
+  "previous_version": "0.4.5",
+  "carry_over": [
+    {
+      "key": "FP-145",
+      "summary": "Refactor section generator to share retrieval cache across reviewers",
+      "status": "In Review"
+    }
+  ]
+}
