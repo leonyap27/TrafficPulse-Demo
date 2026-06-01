@@ -189,6 +189,7 @@
 
   @media (prefers-reduced-motion: no-preference) {
     .road-card, .kpi { transition: transform 0.12s ease; }
+    .road-card:hover, .kpi:hover { transform: translateY(-2px); }
   }
 </style>
 </head>
@@ -273,7 +274,7 @@
       <li><strong>Static page.</strong> No external APIs, no production data, no build
           step. The page tries to <code>fetch()</code> the data file; if blocked by
           <code>file://</code> origin policy, it falls back to inline JSON below.</li>
-      <li><strong>Sibling page.</strong> <code>page1.html</code> (separate ticket)
+      <li><strong>Sibling page.</strong> <a href="page1.html"><code>page1.html</code></a> (separate ticket)
           shows the incident-level table; this page (<code>page2.html</code>) is the
           road-network rollup view.</li>
     </ul>
@@ -511,6 +512,8 @@
     const { data: incidents, source } = await loadIncidents();
     if (!Array.isArray(incidents) || incidents.length === 0) {
       showError("Could not load incidents — neither fetch nor inline fallback returned data.");
+      renderRoads([]);
+      renderHotspots([], 8);
       return;
     }
     if (source === "inline") {
