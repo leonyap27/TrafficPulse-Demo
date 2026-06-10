@@ -128,6 +128,7 @@ Add one line to the chat report:
 - One logical change per commit.
 - Prefer editing existing files over adding new ones.
 - Follow the approved plan's "Order of changes." If you discover the plan was wrong, **stop and surface it** — don't quietly diverge.
+- **Dashboard UI/UX delegation.** If the planned changes touch dashboard surfaces (`index*.html`, dashboard React components, zone pages, or any layout / interaction / data-vis / a11y concern), delegate the UI work to the [`dashboard-ui-ux`](../agents/dashboard-ui-ux.md) subagent via the `Agent` tool (`subagent_type: "dashboard-ui-ux"`). Hand it the ticket key + the relevant plan section; expect a structured hand-back (files edited, browser verification notes, things it could not verify). Fold that hand-back into the PR body's testing-evidence section verbatim. Backend / data / non-UI changes stay in this skill.
 
 ## 4. Pre-PR smoke check (fail-fast only)
 
